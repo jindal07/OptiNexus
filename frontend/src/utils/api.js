@@ -60,63 +60,39 @@ export async function processFiles(toolId, urls, options = {}, onProgress) {
 
 /**
  * Process document conversion with CloudConvert
- * Uses polling to check job status
+ * Now uses synchronous conversion (server handles the full flow)
  */
 async function processConversion(type, url, onProgress) {
-  // Start conversion job
-  const startResponse = await fetch(`${API_BASE}/convert`, {
+  // Notify progress started
+  if (onProgress) onProgress(10);
+
+  // Start conversion - server now handles the full flow
+  const response = await fetch(`${API_BASE}/convert`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ url, type })
   });
 
-  if (!startResponse.ok) {
-    const error = await startResponse.json();
-    throw new Error(error.error || 'Failed to start conversion');
+  if (onProgress) onProgress(50);
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Failed to convert file');
   }
 
-  const { jobId } = await startResponse.json();
+  const result = await response.json();
+  
+  if (onProgress) onProgress(100);
 
-  // Poll for completion
-  return pollJobStatus(jobId, onProgress);
-}
-
-/**
- * Poll job status every 2 seconds
- */
-async function pollJobStatus(jobId, onProgress, maxAttempts = 150) {
-  let attempts = 0;
-
-  while (attempts < maxAttempts) {
-    const response = await fetch(`${API_BASE}/convert?jobId=${jobId}`);
-    
-    if (!response.ok) {
-      throw new Error('Failed to get job status');
-    }
-
-    const status = await response.json();
-
-    if (onProgress) {
-      onProgress(status.progress || 0);
-    }
-
-    if (status.status === 'finished' && status.downloadUrl) {
-      return {
-        success: true,
-        downloadUrl: status.downloadUrl
-      };
-    }
-
-    if (status.status === 'error') {
-      throw new Error(status.error || 'Conversion failed');
-    }
-
-    // Wait 2 seconds before next poll
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    attempts++;
+  if (!result.success) {
+    throw new Error(result.error || 'Conversion failed');
   }
 
-  throw new Error('Conversion timed out');
+  return {
+    success: true,
+    downloadUrl: result.downloadUrl,
+    filename: result.filename
+  };
 }
 
 /**

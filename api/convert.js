@@ -1,8 +1,9 @@
-import { createConversionJob, getJobStatus, getConversionFormats } from './lib/cloudconvert.js';
+import { convertFileBuffer, getJobStatus, getConversionFormats } from './lib/cloudconvert.js';
+import { uploadToBlob, getContentType } from './lib/blob-utils.js';
 
 /**
  * POST /api/convert
- * Start a document conversion job using CloudConvert
+ * Convert document using CloudConvert (PDF ↔ DOCX/PPTX)
  * Body: { url: string, type: string }
  * Types: pdf-to-docx, pdf-to-pptx, docx-to-pdf, pptx-to-pdf
  */
@@ -15,7 +16,7 @@ export default async function handler(req, res) {
     return res.status(200).end();
   }
 
-  // GET request for job status polling
+  // GET request for job status polling (kept for compatibility)
   if (req.method === 'GET') {
     try {
       const { jobId } = req.query;
@@ -81,27 +82,68 @@ export default async function handler(req, res) {
       });
     }
 
-    // Create conversion job
-    const { jobId, status } = await createConversionJob(
-      url,
+    // Download the file from URL first
+    console.log(`Downloading file from: ${url}`);
+    const fileResponse = await fetch(url);
+    if (!fileResponse.ok) {
+      return res.status(400).json({
+        success: false,
+        error: 'Failed to download file from URL'
+      });
+    }
+
+    const fileBuffer = Buffer.from(await fileResponse.arrayBuffer());
+    const originalFilename = url.split('/').pop() || `file.${formats.input}`;
+
+    // Convert using CloudConvert with direct file upload
+    console.log(`Starting CloudConvert conversion: ${formats.input} → ${formats.output}`);
+    const result = await convertFileBuffer(
+      fileBuffer,
+      originalFilename,
       formats.input,
       formats.output
     );
 
+    // Download the converted file and upload to our storage
+    console.log(`Downloading converted file from CloudConvert`);
+    const convertedResponse = await fetch(result.downloadUrl);
+    const convertedBuffer = Buffer.from(await convertedResponse.arrayBuffer());
+
+    // Upload to our storage (local or Vercel Blob)
+    const outputFilename = `converted-${Date.now()}.${formats.output}`;
+    const uploaded = await uploadToBlob(
+      convertedBuffer,
+      outputFilename,
+      getContentType(formats.output)
+    );
+
+    console.log(`Conversion complete: ${uploaded.url}`);
+
     return res.status(200).json({
       success: true,
-      jobId,
-      status,
+      downloadUrl: uploaded.url,
+      filename: outputFilename,
+      originalFilename,
       type,
-      message: 'Conversion started. Poll /api/convert?jobId=<jobId> for status.'
+      inputFormat: formats.input,
+      outputFormat: formats.output
     });
 
   } catch (error) {
     console.error('Conversion error:', error);
+    
+    // Provide more specific error messages
+    let errorMessage = error.message || 'Failed to convert file';
+    
+    if (error.message?.includes('Invalid scope')) {
+      errorMessage = 'CloudConvert API key has insufficient permissions. Please regenerate your API key with task.read and task.write scopes.';
+    } else if (error.message?.includes('FORBIDDEN')) {
+      errorMessage = 'CloudConvert API access denied. Please check your API key permissions.';
+    }
+    
     return res.status(500).json({
       success: false,
-      error: error.message || 'Failed to start conversion'
+      error: errorMessage
     });
   }
 }
-

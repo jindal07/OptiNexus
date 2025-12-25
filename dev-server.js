@@ -2,12 +2,21 @@
  * Local development server for API
  * In production, Vercel handles routing to individual serverless functions
  */
+
+// Load environment variables from .env file
+import 'dotenv/config';
+
 import express from 'express';
 import cors from 'cors';
 import { fileURLToPath } from 'url';
 import path from 'path';
 import fs from 'fs/promises';
 import multer from 'multer';
+
+// Log loaded env vars (without exposing full keys)
+console.log('Environment loaded:');
+console.log('  CLOUDCONVERT_API_KEY:', process.env.CLOUDCONVERT_API_KEY ? '✅ Set' : '❌ Not set');
+console.log('  BLOB_READ_WRITE_TOKEN:', process.env.BLOB_READ_WRITE_TOKEN ? '✅ Set' : '❌ Not set (using local storage)');
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

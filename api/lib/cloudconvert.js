@@ -11,12 +11,71 @@ function getCloudConvertClient() {
     throw new Error('CLOUDCONVERT_API_KEY environment variable is not set');
   }
 
-  return new CloudConvert(apiKey, false); // false for production API
+  // Use sandbox mode (false) for production, (true) for testing
+  return new CloudConvert(apiKey, false);
 }
 
 /**
- * Create a conversion job with CloudConvert
- * @param {string} inputUrl - Source file URL
+ * Convert a file using CloudConvert with direct file upload
+ * @param {Buffer} fileBuffer - The file content as buffer
+ * @param {string} filename - Original filename
+ * @param {string} inputFormat - Input format (pdf, docx, pptx)
+ * @param {string} outputFormat - Output format (pdf, docx, pptx)
+ * @returns {Promise<{downloadUrl: string}>}
+ */
+export async function convertFileBuffer(fileBuffer, filename, inputFormat, outputFormat) {
+  const cloudConvert = getCloudConvertClient();
+
+  // Create job with upload task
+  const job = await cloudConvert.jobs.create({
+    tasks: {
+      'upload-file': {
+        operation: 'import/upload'
+      },
+      'convert-file': {
+        operation: 'convert',
+        input: 'upload-file',
+        input_format: inputFormat,
+        output_format: outputFormat
+      },
+      'export-file': {
+        operation: 'export/url',
+        input: 'convert-file'
+      }
+    }
+  });
+
+  // Get the upload task
+  const uploadTask = job.tasks.find(t => t.operation === 'import/upload');
+  
+  if (!uploadTask || !uploadTask.result || !uploadTask.result.form) {
+    throw new Error('Failed to get upload URL from CloudConvert');
+  }
+
+  // Upload the file
+  await cloudConvert.tasks.upload(uploadTask, fileBuffer, filename);
+
+  // Wait for job to complete
+  const finishedJob = await cloudConvert.jobs.wait(job.id);
+
+  // Find the export task with download URL
+  const exportTask = finishedJob.tasks.find(t => 
+    t.operation === 'export/url' && t.status === 'finished'
+  );
+
+  if (!exportTask || !exportTask.result || !exportTask.result.files) {
+    throw new Error('Conversion failed - no output file');
+  }
+
+  return {
+    downloadUrl: exportTask.result.files[0].url,
+    filename: exportTask.result.files[0].filename
+  };
+}
+
+/**
+ * Create a conversion job with CloudConvert (using URL - for public URLs only)
+ * @param {string} inputUrl - Source file URL (must be publicly accessible)
  * @param {string} inputFormat - Input format (pdf, docx, pptx)
  * @param {string} outputFormat - Output format (pdf, docx, pptx)
  * @returns {Promise<{jobId: string, status: string}>}
@@ -141,4 +200,3 @@ export function getConversionFormats(type) {
 
   return formatMap[type] || null;
 }
-
