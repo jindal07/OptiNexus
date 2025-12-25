@@ -1,7 +1,6 @@
 import { 
   Merge, Split, Minimize2, RotateCw, Droplets, 
-  FileOutput, Maximize2, Sparkles, ArrowRight, Zap,
-  Shield, Clock, Cloud
+  FileOutput, Maximize2, Sparkles, ArrowRight, Zap
 } from 'lucide-react';
 import TiltedCard from './TiltedCard';
 
@@ -81,39 +80,6 @@ export default function Dashboard({ category, tools, onSelectTool }) {
             </TiltedCard>
           );
         })}
-      </div>
-
-      {/* Features Section */}
-      <div className="mt-10 md:mt-16">
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
-          {[
-            { icon: Cloud, label: 'Max File Size', value: '100MB', color: 'from-brand-400 to-brand-600' },
-            { icon: Zap, label: 'Processing', value: 'Instant', color: 'from-amber-400 to-amber-500' },
-            { icon: Shield, label: 'Privacy', value: 'Auto-Delete', color: 'from-emerald-400 to-emerald-500' },
-            { icon: Clock, label: 'Timeout', value: '60s Max', color: 'from-violet-400 to-violet-500' },
-          ].map((stat, i) => {
-            const StatIcon = stat.icon;
-            return (
-              <TiltedCard
-                key={stat.label}
-                scaleOnHover={1.05}
-                rotateAmplitude={8}
-                className="animate-scale-in"
-                style={{ animationDelay: `${(tools.length * 50) + (i * 80)}ms` }}
-              >
-                <div className="glass-card p-4 md:p-5 text-center h-full group hover:border-brand-500/20 transition-all duration-300">
-                  <div className={`w-10 h-10 mx-auto mb-3 rounded-xl bg-gradient-to-br ${stat.color} flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300`}>
-                    <StatIcon className="w-5 h-5 text-surface-950" />
-                  </div>
-                  <div className="text-lg md:text-xl font-display font-bold text-white mb-0.5">
-                    {stat.value}
-                  </div>
-                  <div className="text-xs text-surface-500">{stat.label}</div>
-                </div>
-              </TiltedCard>
-            );
-          })}
-        </div>
       </div>
     </div>
   );
