@@ -1,6 +1,7 @@
 import { 
   Merge, Split, Minimize2, RotateCw, Droplets, 
-  FileOutput, Maximize2, Sparkles, ArrowRight, Zap 
+  FileOutput, Maximize2, Sparkles, ArrowRight, Zap,
+  Shield, Clock, Cloud
 } from 'lucide-react';
 
 const iconMap = {
@@ -16,27 +17,29 @@ const iconMap = {
 
 export default function Dashboard({ category, tools, onSelectTool }) {
   return (
-    <div className="animate-slide-up">
+    <div className="animate-fade-in">
       {/* Hero Section */}
-      <div className="mb-10">
-        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-brand-500/10 border border-brand-500/20 text-brand-400 text-xs font-medium mb-4">
+      <div className="mb-8 md:mb-12">
+        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-gradient-to-r from-brand-500/15 to-accent-500/10 border border-brand-500/20 text-brand-400 text-xs font-semibold tracking-wide mb-4">
           <Zap className="w-3.5 h-3.5" />
-          {category === 'pdf' ? 'PDF Suite' : 'Image Suite'}
+          <span>{category === 'pdf' ? 'PDF Suite' : 'Image Suite'}</span>
         </div>
-        <h2 className="text-3xl md:text-4xl font-display font-bold text-white mb-3">
+        
+        <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-display font-bold text-white mb-3 md:mb-4 tracking-tight">
           {category === 'pdf' 
-            ? 'Transform Your PDFs' 
-            : 'Enhance Your Images'}
+            ? <>Transform Your <span className="gradient-text">Documents</span></> 
+            : <>Enhance Your <span className="gradient-text">Images</span></>}
         </h2>
-        <p className="text-surface-400 max-w-xl">
+        
+        <p className="text-surface-400 text-sm md:text-base max-w-2xl leading-relaxed">
           {category === 'pdf'
-            ? 'Merge, split, compress, convert, and edit PDF documents with serverless processing.'
-            : 'Compress, upscale, resize, and convert images with powerful cloud processing.'}
+            ? 'Merge, split, compress, convert, and edit PDF documents with lightning-fast serverless processing. Your files stay private and are automatically deleted.'
+            : 'Compress, upscale with AI, resize, and convert images using powerful cloud processing. Professional-grade tools at your fingertips.'}
         </p>
       </div>
 
       {/* Tools Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
         {tools.map((tool, index) => {
           const Icon = iconMap[tool.icon] || FileOutput;
           
@@ -44,24 +47,29 @@ export default function Dashboard({ category, tools, onSelectTool }) {
             <button
               key={tool.id}
               onClick={() => onSelectTool(tool)}
-              className="tool-card text-left group animate-slide-up"
-              style={{ animationDelay: `${index * 50}ms` }}
+              className="tool-card text-left group animate-scale-in"
+              style={{ animationDelay: `${index * 40}ms` }}
             >
-              <div className="flex items-start justify-between mb-4">
-                <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-brand-500/20 to-brand-600/10 flex items-center justify-center group-hover:from-brand-500/30 group-hover:to-brand-600/20 transition-all duration-300">
-                  <Icon className="w-5 h-5 text-brand-400 group-hover:text-brand-300 transition-colors" />
+              <div className="flex items-start justify-between mb-3 md:mb-4">
+                <div className="icon-container">
+                  <Icon className="w-5 h-5 text-brand-400 group-hover:text-brand-300 transition-colors duration-300" />
                 </div>
                 {tool.requiresCloudConvert && (
-                  <span className="text-[10px] text-surface-400 bg-surface-800 px-2 py-0.5 rounded-full">
+                  <span className="text-[10px] font-medium text-accent-400 bg-accent-500/10 px-2.5 py-1 rounded-full border border-accent-500/15">
                     CloudConvert
                   </span>
                 )}
               </div>
-              <h3 className="text-white font-semibold mb-1 group-hover:text-brand-300 transition-colors">
+              
+              <h3 className="text-white font-semibold mb-1.5 group-hover:text-brand-300 transition-colors duration-300 text-sm md:text-base">
                 {tool.name}
               </h3>
-              <p className="text-sm text-surface-400 mb-4">{tool.desc}</p>
-              <div className="flex items-center gap-1 text-xs text-brand-400 opacity-0 group-hover:opacity-100 transition-opacity">
+              
+              <p className="text-xs md:text-sm text-surface-500 mb-3 md:mb-4 line-clamp-2">
+                {tool.desc}
+              </p>
+              
+              <div className="flex items-center gap-1.5 text-xs font-medium text-brand-400 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-x-0 group-hover:translate-x-1">
                 <span>Get started</span>
                 <ArrowRight className="w-3.5 h-3.5" />
               </div>
@@ -70,27 +78,34 @@ export default function Dashboard({ category, tools, onSelectTool }) {
         })}
       </div>
 
-      {/* Info Section */}
-      <div className="mt-12 grid grid-cols-2 md:grid-cols-4 gap-3">
-        {[
-          { label: 'Max File Size', value: '100MB' },
-          { label: 'Processing', value: 'Serverless' },
-          { label: 'Storage', value: 'Vercel Blob' },
-          { label: 'Timeout', value: '60s' },
-        ].map((stat, i) => (
-          <div 
-            key={stat.label}
-            className="glass-card p-4 text-center animate-slide-up"
-            style={{ animationDelay: `${(tools.length + i) * 50}ms` }}
-          >
-            <div className="text-lg font-display font-bold gradient-text mb-0.5">
-              {stat.value}
-            </div>
-            <div className="text-xs text-surface-400">{stat.label}</div>
-          </div>
-        ))}
+      {/* Features Section */}
+      <div className="mt-10 md:mt-16">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+          {[
+            { icon: Cloud, label: 'Max File Size', value: '100MB', color: 'from-brand-400 to-brand-600' },
+            { icon: Zap, label: 'Processing', value: 'Instant', color: 'from-amber-400 to-amber-500' },
+            { icon: Shield, label: 'Privacy', value: 'Auto-Delete', color: 'from-emerald-400 to-emerald-500' },
+            { icon: Clock, label: 'Timeout', value: '60s Max', color: 'from-violet-400 to-violet-500' },
+          ].map((stat, i) => {
+            const StatIcon = stat.icon;
+            return (
+              <div 
+                key={stat.label}
+                className="glass-card p-4 md:p-5 text-center animate-scale-in group hover:border-brand-500/20 transition-all duration-300"
+                style={{ animationDelay: `${(tools.length * 40) + (i * 60)}ms` }}
+              >
+                <div className={`w-10 h-10 mx-auto mb-3 rounded-xl bg-gradient-to-br ${stat.color} flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300`}>
+                  <StatIcon className="w-5 h-5 text-surface-950" />
+                </div>
+                <div className="text-lg md:text-xl font-display font-bold text-white mb-0.5">
+                  {stat.value}
+                </div>
+                <div className="text-xs text-surface-500">{stat.label}</div>
+              </div>
+            );
+          })}
+        </div>
       </div>
     </div>
   );
 }
-

@@ -1,12 +1,12 @@
 import { useState, useCallback } from 'react';
-import { ArrowLeft, Settings2, Play, Loader2, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Settings2, Play, Loader2, AlertCircle, Sparkles } from 'lucide-react';
 import FileUploader from './FileUploader';
 import { uploadToBlob } from '../utils/blob';
 import { processFiles } from '../utils/api';
 
 const TOOL_OPTIONS = {
   'rotate': [
-    { id: 'angle', type: 'select', label: 'Rotation', options: ['90', '180', '270'], default: '90' }
+    { id: 'angle', type: 'select', label: 'Rotation Angle', options: ['90', '180', '270'], default: '90' }
   ],
   'watermark': [
     { id: 'text', type: 'text', label: 'Watermark Text', default: 'CONFIDENTIAL' },
@@ -144,27 +144,30 @@ export default function ToolWorkspace({ tool, onBack, addJob, updateJob }) {
   );
 
   return (
-    <div className="animate-slide-up">
+    <div className="animate-fade-in">
       {/* Header */}
-      <div className="flex items-center gap-4 mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-6 md:mb-8">
         <button
           onClick={onBack}
-          className="p-2 rounded-xl bg-surface-800/50 border border-white/10 hover:border-white/20 transition-all"
+          className="w-10 h-10 rounded-xl bg-white/[0.03] border border-white/[0.06] hover:bg-white/[0.06] hover:border-white/[0.1] transition-all flex items-center justify-center flex-shrink-0"
         >
           <ArrowLeft className="w-5 h-5 text-surface-400" />
         </button>
-        <div>
-          <h2 className="text-xl font-display font-bold text-white">{tool.name}</h2>
-          <p className="text-sm text-surface-400">{tool.desc}</p>
+        
+        <div className="flex-1">
+          <h2 className="text-xl md:text-2xl font-display font-bold text-white mb-1">{tool.name}</h2>
+          <p className="text-sm text-surface-500">{tool.desc}</p>
         </div>
+        
         {tool.requiresCloudConvert && (
-          <span className="text-xs text-amber-400 bg-amber-500/10 px-3 py-1 rounded-full border border-amber-500/20">
-            Requires CloudConvert API Key
+          <span className="inline-flex items-center gap-1.5 text-xs font-medium text-amber-400 bg-amber-500/10 px-3 py-1.5 rounded-full border border-amber-500/20">
+            <Sparkles className="w-3.5 h-3.5" />
+            CloudConvert
           </span>
         )}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
         {/* Upload Area */}
         <div className="lg:col-span-2">
           <FileUploader
@@ -179,12 +182,12 @@ export default function ToolWorkspace({ tool, onBack, addJob, updateJob }) {
 
           {/* Upload Progress */}
           {isProcessing && uploadProgress > 0 && uploadProgress < 100 && (
-            <div className="mt-4 glass-card p-4">
-              <div className="flex justify-between text-sm mb-2">
-                <span className="text-surface-400">Uploading files...</span>
-                <span className="text-brand-400">{uploadProgress}%</span>
+            <div className="mt-4 glass-card p-4 animate-scale-in">
+              <div className="flex justify-between text-sm mb-2.5">
+                <span className="text-surface-400 font-medium">Uploading files...</span>
+                <span className="text-brand-400 font-semibold">{uploadProgress}%</span>
               </div>
-              <div className="h-2 bg-surface-800 rounded-full overflow-hidden">
+              <div className="h-2 bg-white/[0.05] rounded-full overflow-hidden">
                 <div 
                   className="h-full bg-gradient-to-r from-brand-500 to-brand-400 rounded-full transition-all duration-300 progress-striped"
                   style={{ width: `${uploadProgress}%` }}
@@ -195,17 +198,19 @@ export default function ToolWorkspace({ tool, onBack, addJob, updateJob }) {
         </div>
 
         {/* Options Panel */}
-        <div className="glass-card p-5">
-          <div className="flex items-center gap-2 mb-5">
-            <Settings2 className="w-4 h-4 text-brand-400" />
-            <h3 className="font-semibold text-white text-sm">Options</h3>
+        <div className="glass-card p-4 md:p-5 h-fit">
+          <div className="flex items-center gap-2.5 mb-5 pb-4 border-b border-white/[0.06]">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-brand-500/20 to-accent-500/10 flex items-center justify-center">
+              <Settings2 className="w-4 h-4 text-brand-400" />
+            </div>
+            <h3 className="font-semibold text-white">Options</h3>
           </div>
 
           {toolOptions.length > 0 ? (
-            <div className="space-y-4">
+            <div className="space-y-5">
               {toolOptions.map((opt) => (
                 <div key={opt.id}>
-                  <label className="block text-xs font-medium text-surface-300 mb-1.5">
+                  <label className="block text-xs font-medium text-surface-400 mb-2 uppercase tracking-wider">
                     {opt.label}
                   </label>
                   
@@ -213,7 +218,7 @@ export default function ToolWorkspace({ tool, onBack, addJob, updateJob }) {
                     <select
                       value={options[opt.id] || opt.default || ''}
                       onChange={(e) => handleOptionChange(opt.id, e.target.value)}
-                      className="input-field text-sm py-2"
+                      className="input-field text-sm py-2.5"
                       disabled={isProcessing}
                     >
                       {opt.options.map(o => (
@@ -228,7 +233,7 @@ export default function ToolWorkspace({ tool, onBack, addJob, updateJob }) {
                       value={options[opt.id] || ''}
                       onChange={(e) => handleOptionChange(opt.id, e.target.value)}
                       placeholder={opt.placeholder || ''}
-                      className="input-field text-sm py-2"
+                      className="input-field text-sm py-2.5"
                       disabled={isProcessing}
                     />
                   )}
@@ -239,13 +244,13 @@ export default function ToolWorkspace({ tool, onBack, addJob, updateJob }) {
                       value={options[opt.id] || ''}
                       onChange={(e) => handleOptionChange(opt.id, e.target.value)}
                       placeholder={opt.placeholder || ''}
-                      className="input-field text-sm py-2"
+                      className="input-field text-sm py-2.5"
                       disabled={isProcessing}
                     />
                   )}
 
                   {opt.type === 'range' && (
-                    <div className="flex items-center gap-3">
+                    <div className="space-y-2">
                       <input
                         type="range"
                         min={opt.min}
@@ -253,28 +258,34 @@ export default function ToolWorkspace({ tool, onBack, addJob, updateJob }) {
                         step={opt.step}
                         value={options[opt.id] || opt.default}
                         onChange={(e) => handleOptionChange(opt.id, parseFloat(e.target.value))}
-                        className="flex-1 accent-brand-500"
+                        className="w-full h-2 bg-white/[0.05] rounded-full appearance-none cursor-pointer accent-brand-500
+                          [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 
+                          [&::-webkit-slider-thumb]:bg-brand-500 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:shadow-lg
+                          [&::-webkit-slider-thumb]:shadow-brand-500/30 [&::-webkit-slider-thumb]:transition-transform
+                          [&::-webkit-slider-thumb]:hover:scale-110"
                         disabled={isProcessing}
                       />
-                      <span className="text-xs text-surface-400 w-10 text-right">
-                        {options[opt.id] || opt.default}
-                      </span>
+                      <div className="flex justify-between text-xs text-surface-500">
+                        <span>{opt.min}</span>
+                        <span className="text-brand-400 font-semibold">{options[opt.id] || opt.default}</span>
+                        <span>{opt.max}</span>
+                      </div>
                     </div>
                   )}
                 </div>
               ))}
             </div>
           ) : (
-            <p className="text-surface-400 text-xs">
-              No additional options for this tool.
+            <p className="text-surface-500 text-sm py-4 text-center">
+              No additional options available.
             </p>
           )}
 
           {/* Error Message */}
           {error && (
-            <div className="mt-4 p-3 rounded-lg bg-red-500/10 border border-red-500/20 flex items-start gap-2">
+            <div className="mt-5 p-3.5 rounded-xl bg-red-500/10 border border-red-500/20 flex items-start gap-2.5 animate-scale-in">
               <AlertCircle className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" />
-              <p className="text-xs text-red-400">{error}</p>
+              <p className="text-sm text-red-400">{error}</p>
             </div>
           )}
 
@@ -282,17 +293,17 @@ export default function ToolWorkspace({ tool, onBack, addJob, updateJob }) {
           <button
             onClick={handleProcess}
             disabled={isProcessing || files.length === 0}
-            className="btn-primary w-full mt-5 flex items-center justify-center gap-2 text-sm py-2.5"
+            className="btn-primary w-full mt-6 flex items-center justify-center gap-2.5"
           >
             {isProcessing ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin" />
-                Processing...
+                <span>Processing...</span>
               </>
             ) : (
               <>
                 <Play className="w-4 h-4" />
-                Process {files.length > 0 ? `(${files.length})` : ''}
+                <span>Process {files.length > 0 ? `(${files.length})` : ''}</span>
               </>
             )}
           </button>
@@ -301,4 +312,3 @@ export default function ToolWorkspace({ tool, onBack, addJob, updateJob }) {
     </div>
   );
 }
-
