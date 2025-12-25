@@ -79,24 +79,39 @@ async function handleSplit(req, res) {
     });
   }
 
-  const results = await splitPdf(url, ranges);
+  const { results, totalPages } = await splitPdf(url, ranges);
   const uploadedFiles = [];
 
   for (let i = 0; i < results.length; i++) {
-    const { bytes, pageRange } = results[i];
-    const filename = `split-${pageRange}-${Date.now()}.pdf`;
+    const { bytes, pages } = results[i];
+    const pageRange = pages.join('-');
+    const filename = `split-pages-${pageRange}-${Date.now()}.pdf`;
     const uploaded = await uploadToBlob(Buffer.from(bytes), filename, getContentType('pdf'));
     uploadedFiles.push({
       downloadUrl: uploaded.url,
       filename,
-      pageRange
+      pageRange,
+      pages
+    });
+  }
+
+  // If only one file, return single downloadUrl for easier handling
+  if (uploadedFiles.length === 1) {
+    return res.status(200).json({
+      success: true,
+      downloadUrl: uploadedFiles[0].downloadUrl,
+      filename: uploadedFiles[0].filename,
+      files: uploadedFiles,
+      count: 1,
+      totalPages
     });
   }
 
   return res.status(200).json({
     success: true,
     files: uploadedFiles,
-    count: uploadedFiles.length
+    count: uploadedFiles.length,
+    totalPages
   });
 }
 

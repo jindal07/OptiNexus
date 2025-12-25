@@ -76,6 +76,7 @@ export async function resizeImage(url, options = {}) {
   const { width, height, fit = 'cover' } = options;
 
   const imageBuffer = await fetchImageBuffer(url);
+  const inputMetadata = await sharp(imageBuffer).metadata();
 
   const outputBuffer = await sharp(imageBuffer)
     .resize({
@@ -91,7 +92,8 @@ export async function resizeImage(url, options = {}) {
   return {
     buffer: outputBuffer,
     width: metadata.width,
-    height: metadata.height
+    height: metadata.height,
+    format: metadata.format || inputMetadata.format || 'png'
   };
 }
 
@@ -163,8 +165,9 @@ export async function upscaleImage(url, scale = 2) {
 
   return {
     buffer: outputBuffer,
-    originalDimensions: `${originalWidth}x${originalHeight}`,
-    newDimensions: `${newWidth}x${newHeight}`,
+    width: newWidth,
+    height: newHeight,
+    format: 'png',
     scale
   };
 }

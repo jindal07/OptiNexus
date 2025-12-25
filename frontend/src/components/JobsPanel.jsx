@@ -34,35 +34,42 @@ const ProgressBar = ({ progress, striped = false }) => (
 export default function JobsPanel({ jobs, isOpen, onClose }) {
   const [downloading, setDownloading] = useState({});
 
-  const handleDownload = async (job) => {
-    // Get the download URL
-    let url = null;
-    let filename = null;
-    
-    if (job.result?.downloadUrl) {
-      url = job.result.downloadUrl;
-      filename = job.result.filename || `${job.type.replace(/\s+/g, '-').toLowerCase()}-result`;
-    } else if (job.result?.files?.[0]?.downloadUrl) {
-      url = job.result.files[0].downloadUrl;
-      filename = job.result.files[0].filename;
-    }
-
-    if (!url) {
-      console.error('No download URL found');
-      return;
-    }
-
+  const handleDownload = async (job, fileIndex = null) => {
     // Set downloading state
-    setDownloading(prev => ({ ...prev, [job.id]: true }));
+    const downloadKey = fileIndex !== null ? `${job.id}-${fileIndex}` : job.id;
+    setDownloading(prev => ({ ...prev, [downloadKey]: true }));
 
     try {
-      await downloadFile(url, filename);
+      // If fileIndex is specified, download that specific file
+      if (fileIndex !== null && job.result?.files?.[fileIndex]) {
+        const file = job.result.files[fileIndex];
+        await downloadFile(file.downloadUrl, file.filename);
+      } 
+      // If there's a single downloadUrl, use that
+      else if (job.result?.downloadUrl) {
+        const filename = job.result.filename || `${job.type.replace(/\s+/g, '-').toLowerCase()}-result`;
+        await downloadFile(job.result.downloadUrl, filename);
+      }
+      // If there are multiple files and no specific index, download all
+      else if (job.result?.files?.length > 0) {
+        for (let i = 0; i < job.result.files.length; i++) {
+          const file = job.result.files[i];
+          await downloadFile(file.downloadUrl, file.filename);
+          // Small delay between downloads
+          if (i < job.result.files.length - 1) {
+            await new Promise(r => setTimeout(r, 500));
+          }
+        }
+      } else {
+        console.error('No download URL found');
+      }
     } catch (error) {
       console.error('Download failed:', error);
-      // Fallback: open in new tab
-      window.open(url, '_blank');
+      // Fallback: open first available URL in new tab
+      const url = job.result?.downloadUrl || job.result?.files?.[0]?.downloadUrl;
+      if (url) window.open(url, '_blank');
     } finally {
-      setDownloading(prev => ({ ...prev, [job.id]: false }));
+      setDownloading(prev => ({ ...prev, [downloadKey]: false }));
     }
   };
 
@@ -154,23 +161,61 @@ export default function JobsPanel({ jobs, isOpen, onClose }) {
                         Total savings: {job.result.totalSavings}
                       </p>
                     )}
-                    <button
-                      onClick={() => handleDownload(job)}
-                      disabled={downloading[job.id]}
-                      className="btn-secondary w-full flex items-center justify-center gap-2 text-xs py-2 disabled:opacity-50"
-                    >
-                      {downloading[job.id] ? (
-                        <>
-                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                          Downloading...
-                        </>
-                      ) : (
-                        <>
-                          <Download className="w-3.5 h-3.5" />
-                          Download {job.result.files?.length > 1 ? `(${job.result.files.length})` : ''}
-                        </>
-                      )}
-                    </button>
+                    
+                    {/* Multiple files - show individual download buttons */}
+                    {job.result.files?.length > 1 && !job.result.downloadUrl ? (
+                      <div className="space-y-2">
+                        <p className="text-xs text-surface-400 mb-1">
+                          {job.result.files.length} files created
+                        </p>
+                        {job.result.files.map((file, idx) => (
+                          <button
+                            key={idx}
+                            onClick={() => handleDownload(job, idx)}
+                            disabled={downloading[`${job.id}-${idx}`]}
+                            className="btn-secondary w-full flex items-center justify-center gap-2 text-xs py-1.5 disabled:opacity-50"
+                          >
+                            {downloading[`${job.id}-${idx}`] ? (
+                              <Loader2 className="w-3 h-3 animate-spin" />
+                            ) : (
+                              <Download className="w-3 h-3" />
+                            )}
+                            {file.pageRange ? `Pages ${file.pageRange}` : `File ${idx + 1}`}
+                          </button>
+                        ))}
+                        <button
+                          onClick={() => handleDownload(job)}
+                          disabled={downloading[job.id]}
+                          className="btn-primary w-full flex items-center justify-center gap-2 text-xs py-2 disabled:opacity-50 mt-2"
+                        >
+                          {downloading[job.id] ? (
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          ) : (
+                            <Download className="w-3.5 h-3.5" />
+                          )}
+                          Download All
+                        </button>
+                      </div>
+                    ) : (
+                      /* Single file download */
+                      <button
+                        onClick={() => handleDownload(job)}
+                        disabled={downloading[job.id]}
+                        className="btn-secondary w-full flex items-center justify-center gap-2 text-xs py-2 disabled:opacity-50"
+                      >
+                        {downloading[job.id] ? (
+                          <>
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            Downloading...
+                          </>
+                        ) : (
+                          <>
+                            <Download className="w-3.5 h-3.5" />
+                            Download
+                          </>
+                        )}
+                      </button>
+                    )}
                   </div>
                 )}
 

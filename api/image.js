@@ -114,7 +114,8 @@ async function handleResize(req, res) {
 }
 
 async function handleConvert(req, res) {
-  const { url, format = 'webp', quality = 90 } = req.body;
+  const { url, format, quality = 90 } = req.body;
+  const outputFormat = (format || 'webp').toLowerCase();
 
   if (!url) {
     return res.status(400).json({
@@ -124,26 +125,26 @@ async function handleConvert(req, res) {
   }
 
   const validFormats = ['webp', 'jpeg', 'jpg', 'png', 'gif', 'tiff'];
-  if (!validFormats.includes(format.toLowerCase())) {
+  if (!validFormats.includes(outputFormat)) {
     return res.status(400).json({
       success: false,
       error: `Invalid format. Use: ${validFormats.join(', ')}`
     });
   }
 
-  const { buffer, format: outputFormat } = await convertImage(url, {
-    format: format.toLowerCase(),
+  const { buffer, format: resultFormat } = await convertImage(url, {
+    format: outputFormat,
     quality: parseInt(quality)
   });
 
-  const filename = `converted-${Date.now()}.${outputFormat}`;
-  const result = await uploadToBlob(buffer, filename, getContentType(outputFormat));
+  const filename = `converted-${Date.now()}.${resultFormat}`;
+  const result = await uploadToBlob(buffer, filename, getContentType(resultFormat));
 
   return res.status(200).json({
     success: true,
     downloadUrl: result.url,
     filename,
-    format: outputFormat
+    format: resultFormat
   });
 }
 
