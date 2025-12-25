@@ -1,4 +1,4 @@
-import { mergePdfs, splitPdf, compressPdf, rotatePdf, addWatermark } from './lib/pdf-utils.js';
+import { mergePdfs, splitPdf, compressPdf, rotatePdf, watermarkPdf } from './lib/pdf-utils.js';
 import { uploadToBlob, getContentType } from './lib/blob-utils.js';
 
 /**
@@ -164,7 +164,7 @@ async function handleWatermark(req, res) {
     });
   }
 
-  const watermarkedBytes = await addWatermark(url, { text, opacity, fontSize, color });
+  const watermarkedBytes = await watermarkPdf(url, { text, opacity, fontSize, color });
   const filename = `watermarked-${Date.now()}.pdf`;
   const result = await uploadToBlob(Buffer.from(watermarkedBytes), filename, getContentType('pdf'));
 
