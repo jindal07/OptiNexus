@@ -146,6 +146,9 @@ BLOB_READ_WRITE_TOKEN=your_vercel_blob_token
 # Optional - For Office document conversions
 CLOUDCONVERT_API_KEY=your_cloudconvert_api_key
 
+# Optional - Password to protect CloudConvert features (default: optinexus2024)
+CLOUDCONVERT_PASSWORD=your_secure_password_here
+
 # Optional - Secret for protecting cleanup endpoint (production)
 CRON_SECRET=your_random_secret_here
 
@@ -299,6 +302,23 @@ Files are automatically deleted after 30 minutes (configurable via `FILE_TTL_MS`
 |-------------|----------------|
 | **Production** | Vercel Cron (every 15 minutes) |
 | **Development** | Auto-timer (every 5 minutes) |
+
+### Password Protection
+
+**POST `/api/verify-password`** - Verify password for CloudConvert features
+
+CloudConvert features (PDF ↔ DOCX/PPTX conversions) are password protected. Users must enter the correct password before accessing these features.
+
+- Password is stored in `CLOUDCONVERT_PASSWORD` environment variable
+- Default password: `optinexus2024` (change in production!)
+- Authentication persists for 24 hours in session storage
+- Password modal appears automatically when accessing protected features
+
+```json
+{
+  "password": "your_password_here"
+}
+```
 
 ## ⚠️ Limitations
 

@@ -1,6 +1,8 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { ArrowLeft, Settings2, Play, Loader2, AlertCircle, Sparkles } from 'lucide-react';
 import FileUploader from './FileUploader';
+import RainbowButton from './RainbowButton';
+import PasswordModal from './PasswordModal';
 import { uploadToBlob } from '../utils/blob';
 import { processFiles } from '../utils/api';
 
@@ -47,6 +49,28 @@ export default function ToolWorkspace({ tool, onBack, addJob, updateJob }) {
   const [isProcessing, setIsProcessing] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [error, setError] = useState(null);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [pendingProcess, setPendingProcess] = useState(false);
+
+  // Check if user is authenticated for CloudConvert
+  const isAuthenticated = () => {
+    const authenticated = sessionStorage.getItem('cloudconvert_authenticated');
+    const authTime = sessionStorage.getItem('cloudconvert_auth_time');
+    
+    if (!authenticated || !authTime) return false;
+    
+    // Check if authentication is still valid (24 hours)
+    const timeElapsed = Date.now() - parseInt(authTime);
+    const twentyFourHours = 24 * 60 * 60 * 1000;
+    
+    if (timeElapsed > twentyFourHours) {
+      sessionStorage.removeItem('cloudconvert_authenticated');
+      sessionStorage.removeItem('cloudconvert_auth_time');
+      return false;
+    }
+    
+    return authenticated === 'true';
+  };
 
   const handleFilesChange = useCallback((newFiles) => {
     setFiles(newFiles);
@@ -68,6 +92,18 @@ export default function ToolWorkspace({ tool, onBack, addJob, updateJob }) {
       return;
     }
 
+    // Check if CloudConvert feature requires password
+    if (tool.requiresCloudConvert && !isAuthenticated()) {
+      setPendingProcess(true);
+      setShowPasswordModal(true);
+      return;
+    }
+
+    // Proceed with processing
+    await executeProcess();
+  };
+
+  const executeProcess = async () => {
     setIsProcessing(true);
     setError(null);
     setUploadProgress(0);
@@ -290,25 +326,44 @@ export default function ToolWorkspace({ tool, onBack, addJob, updateJob }) {
           )}
 
           {/* Process Button */}
-          <button
-            onClick={handleProcess}
-            disabled={isProcessing || files.length === 0}
-            className="btn-primary w-full mt-6 flex items-center justify-center gap-2.5"
-          >
+          <div className="mt-6 flex justify-center">
             {isProcessing ? (
-              <>
+              <button
+                disabled
+                className="py-3 px-8 rounded-full bg-surface-800 border border-surface-700 text-surface-400 font-semibold flex items-center justify-center gap-2.5 cursor-not-allowed"
+              >
                 <Loader2 className="w-4 h-4 animate-spin" />
                 <span>Processing...</span>
-              </>
+              </button>
             ) : (
-              <>
+              <RainbowButton
+                onClick={handleProcess}
+                size="lg"
+                className={files.length === 0 ? 'opacity-50 pointer-events-none' : ''}
+              >
                 <Play className="w-4 h-4" />
                 <span>Process {files.length > 0 ? `(${files.length})` : ''}</span>
-              </>
+              </RainbowButton>
             )}
-          </button>
+          </div>
         </div>
       </div>
+
+      {/* Password Modal */}
+      <PasswordModal
+        isOpen={showPasswordModal}
+        onClose={() => {
+          setShowPasswordModal(false);
+          setPendingProcess(false);
+        }}
+        onSuccess={() => {
+          if (pendingProcess) {
+            setPendingProcess(false);
+            executeProcess();
+          }
+        }}
+        toolName={tool.name}
+      />
     </div>
   );
 }

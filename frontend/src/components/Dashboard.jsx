@@ -3,6 +3,7 @@ import {
   FileOutput, Maximize2, Sparkles, ArrowRight, Zap,
   Shield, Clock, Cloud
 } from 'lucide-react';
+import TiltedCard from './TiltedCard';
 
 const iconMap = {
   merge: Merge,
@@ -39,41 +40,45 @@ export default function Dashboard({ category, tools, onSelectTool }) {
       </div>
 
       {/* Tools Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5">
         {tools.map((tool, index) => {
           const Icon = iconMap[tool.icon] || FileOutput;
           
           return (
-            <button
+            <TiltedCard
               key={tool.id}
               onClick={() => onSelectTool(tool)}
-              className="tool-card text-left group animate-scale-in"
-              style={{ animationDelay: `${index * 40}ms` }}
+              scaleOnHover={1.03}
+              rotateAmplitude={6}
+              className="animate-scale-in"
+              style={{ animationDelay: `${index * 50}ms` }}
             >
-              <div className="flex items-start justify-between mb-3 md:mb-4">
-                <div className="icon-container">
-                  <Icon className="w-5 h-5 text-brand-400 group-hover:text-brand-300 transition-colors duration-300" />
+              <div className="tool-card h-full text-left group">
+                <div className="flex items-start justify-between mb-3 md:mb-4">
+                  <div className="icon-container group-hover:scale-110 transition-transform duration-300">
+                    <Icon className="w-5 h-5 text-brand-400 group-hover:text-brand-300 transition-colors duration-300" />
+                  </div>
+                  {tool.requiresCloudConvert && (
+                    <span className="text-[10px] font-medium text-accent-400 bg-accent-500/10 px-2.5 py-1 rounded-full border border-accent-500/15">
+                      CloudConvert
+                    </span>
+                  )}
                 </div>
-                {tool.requiresCloudConvert && (
-                  <span className="text-[10px] font-medium text-accent-400 bg-accent-500/10 px-2.5 py-1 rounded-full border border-accent-500/15">
-                    CloudConvert
-                  </span>
-                )}
+                
+                <h3 className="text-white font-semibold mb-1.5 group-hover:text-brand-300 transition-colors duration-300 text-sm md:text-base">
+                  {tool.name}
+                </h3>
+                
+                <p className="text-xs md:text-sm text-surface-500 mb-3 md:mb-4 line-clamp-2">
+                  {tool.desc}
+                </p>
+                
+                <div className="flex items-center gap-1.5 text-xs font-medium text-brand-400 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-x-0 group-hover:translate-x-1">
+                  <span>Get started</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </div>
               </div>
-              
-              <h3 className="text-white font-semibold mb-1.5 group-hover:text-brand-300 transition-colors duration-300 text-sm md:text-base">
-                {tool.name}
-              </h3>
-              
-              <p className="text-xs md:text-sm text-surface-500 mb-3 md:mb-4 line-clamp-2">
-                {tool.desc}
-              </p>
-              
-              <div className="flex items-center gap-1.5 text-xs font-medium text-brand-400 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-x-0 group-hover:translate-x-1">
-                <span>Get started</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </div>
-            </button>
+            </TiltedCard>
           );
         })}
       </div>
@@ -89,19 +94,23 @@ export default function Dashboard({ category, tools, onSelectTool }) {
           ].map((stat, i) => {
             const StatIcon = stat.icon;
             return (
-              <div 
+              <TiltedCard
                 key={stat.label}
-                className="glass-card p-4 md:p-5 text-center animate-scale-in group hover:border-brand-500/20 transition-all duration-300"
-                style={{ animationDelay: `${(tools.length * 40) + (i * 60)}ms` }}
+                scaleOnHover={1.05}
+                rotateAmplitude={8}
+                className="animate-scale-in"
+                style={{ animationDelay: `${(tools.length * 50) + (i * 80)}ms` }}
               >
-                <div className={`w-10 h-10 mx-auto mb-3 rounded-xl bg-gradient-to-br ${stat.color} flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300`}>
-                  <StatIcon className="w-5 h-5 text-surface-950" />
+                <div className="glass-card p-4 md:p-5 text-center h-full group hover:border-brand-500/20 transition-all duration-300">
+                  <div className={`w-10 h-10 mx-auto mb-3 rounded-xl bg-gradient-to-br ${stat.color} flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300`}>
+                    <StatIcon className="w-5 h-5 text-surface-950" />
+                  </div>
+                  <div className="text-lg md:text-xl font-display font-bold text-white mb-0.5">
+                    {stat.value}
+                  </div>
+                  <div className="text-xs text-surface-500">{stat.label}</div>
                 </div>
-                <div className="text-lg md:text-xl font-display font-bold text-white mb-0.5">
-                  {stat.value}
-                </div>
-                <div className="text-xs text-surface-500">{stat.label}</div>
-              </div>
+              </TiltedCard>
             );
           })}
         </div>

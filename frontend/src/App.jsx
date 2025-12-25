@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import Header from './components/Header';
-import Sidebar from './components/Sidebar';
 import Dashboard from './components/Dashboard';
 import ToolWorkspace from './components/ToolWorkspace';
-import JobsPanel from './components/JobsPanel';
+import DotGrid from './components/DotGrid';
+import Footer from './components/Footer';
 
 const TOOLS = {
   pdf: [
@@ -29,8 +29,6 @@ export default function App() {
   const [activeCategory, setActiveCategory] = useState('pdf');
   const [activeTool, setActiveTool] = useState(null);
   const [jobs, setJobs] = useState([]);
-  const [showJobs, setShowJobs] = useState(false);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const handleSelectTool = (tool) => {
     setActiveTool(tool);
@@ -40,9 +38,13 @@ export default function App() {
     setActiveTool(null);
   };
 
+  const handleCategoryChange = (category) => {
+    setActiveCategory(category);
+    setActiveTool(null);
+  };
+
   const addJob = (job) => {
     setJobs(prev => [job, ...prev]);
-    setShowJobs(true);
   };
 
   const updateJob = (jobId, updates) => {
@@ -52,32 +54,37 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-surface-950 bg-mesh bg-noise relative overflow-x-hidden">
-      {/* Ambient glow effects - Nature inspired */}
-      <div className="fixed top-0 left-1/4 w-96 h-96 bg-brand-500/8 rounded-full blur-[120px] pointer-events-none" />
-      <div className="fixed bottom-0 right-1/4 w-96 h-96 bg-accent-500/6 rounded-full blur-[120px] pointer-events-none" />
-      <div className="fixed top-1/2 right-0 w-64 h-64 bg-slate-custom-500/5 rounded-full blur-[100px] pointer-events-none" />
-
-      <Header 
-        jobsCount={jobs.filter(j => j.status === 'processing' || j.status === 'uploading').length} 
-        onToggleJobs={() => setShowJobs(!showJobs)} 
-        onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
-        sidebarOpen={sidebarOpen}
-        onLogoClick={() => setActiveTool(null)}
-      />
+    <div className="min-h-screen bg-surface-950 relative overflow-x-hidden">
+      {/* Interactive Dot Grid Background */}
+      <div className="fixed inset-0 z-0">
+        <DotGrid
+          dotSize={6}
+          gap={28}
+          baseColor="#313531"
+          activeColor="#a4c837"
+          proximity={100}
+          speedTrigger={60}
+          shockRadius={180}
+          shockStrength={3}
+          returnDuration={1.0}
+        />
+      </div>
       
-      <div className="flex relative">
-        <Sidebar 
-          activeCategory={activeCategory} 
-          onCategoryChange={(cat) => {
-            setActiveCategory(cat);
-            setActiveTool(null);
-          }}
-          isOpen={sidebarOpen}
-          onClose={() => setSidebarOpen(false)}
+      {/* Ambient glow effects - Nature inspired */}
+      <div className="fixed top-0 left-1/4 w-96 h-96 bg-brand-500/8 rounded-full blur-[120px] pointer-events-none z-[1]" />
+      <div className="fixed bottom-0 right-1/4 w-96 h-96 bg-accent-500/6 rounded-full blur-[120px] pointer-events-none z-[1]" />
+      <div className="fixed top-1/2 right-0 w-64 h-64 bg-slate-custom-500/5 rounded-full blur-[100px] pointer-events-none z-[1]" />
+
+      <div className="relative z-10">
+        <Header 
+          jobsCount={jobs.filter(j => j.status === 'processing' || j.status === 'uploading').length} 
+          onLogoClick={() => setActiveTool(null)}
+          activeCategory={activeCategory}
+          onCategoryChange={handleCategoryChange}
+          jobs={jobs}
         />
         
-        <main className="flex-1 p-4 md:p-6 pt-20 md:pt-24 ml-0 md:ml-20 min-h-screen">
+        <main className="p-4 md:p-6 pt-24 md:pt-28 min-h-[calc(100vh-80px)]">
           <div className="max-w-6xl mx-auto">
             {activeTool ? (
               <ToolWorkspace 
@@ -95,13 +102,9 @@ export default function App() {
             )}
           </div>
         </main>
+        
+        {!activeTool && <Footer />}
       </div>
-
-      <JobsPanel 
-        jobs={jobs} 
-        isOpen={showJobs} 
-        onClose={() => setShowJobs(false)}
-      />
     </div>
   );
 }

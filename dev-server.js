@@ -196,6 +196,59 @@ app.post('/api/cleanup', async (req, res) => {
   }
 });
 
+// Password verification endpoint
+app.options('/api/verify-password', (req, res) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.status(200).end();
+});
+
+app.post('/api/verify-password', async (req, res) => {
+  // Set CORS headers
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+  try {
+    const { password } = req.body;
+
+    if (!password) {
+      return res.status(400).json({ success: false, error: 'Password is required' });
+    }
+
+    // Get password from environment variable
+    const correctPassword = process.env.CLOUDCONVERT_PASSWORD;
+
+    if (!correctPassword) {
+      console.error('[Password] CLOUDCONVERT_PASSWORD environment variable is not set');
+      return res.status(500).json({ 
+        success: false, 
+        error: 'Password verification is not configured. Please set CLOUDCONVERT_PASSWORD environment variable.' 
+      });
+    }
+
+    // Compare passwords
+    if (password === correctPassword) {
+      return res.status(200).json({ 
+        success: true,
+        message: 'Password verified'
+      });
+    } else {
+      return res.status(401).json({ 
+        success: false, 
+        error: 'Incorrect password' 
+      });
+    }
+  } catch (error) {
+    console.error('[Password] Verification error:', error);
+    return res.status(500).json({ 
+      success: false, 
+      error: 'Internal server error' 
+    });
+  }
+});
+
 // Catch-all for API routes
 app.all('/api/*', (req, res) => {
   res.status(404).json({ success: false, error: 'API endpoint not found' });
