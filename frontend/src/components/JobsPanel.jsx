@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { X, Download, CheckCircle2, XCircle, Loader2, Clock, Upload, FileText, Sparkles } from 'lucide-react';
+import { X, Download, CheckCircle2, XCircle, Loader2, Clock, Upload, FileText, Sparkles, Eye } from 'lucide-react';
 import { downloadFile } from '../utils/api';
 
 function formatTime(date) {
@@ -84,6 +84,22 @@ export default function JobsPanel({ jobs, isOpen, onClose }) {
       if (url) window.open(url, '_blank');
     } finally {
       setDownloading(prev => ({ ...prev, [downloadKey]: false }));
+    }
+  };
+
+  const handlePreview = (job, fileIndex = null) => {
+    let url = null;
+    
+    if (fileIndex !== null && job.result?.files?.[fileIndex]) {
+      url = job.result.files[fileIndex].downloadUrl;
+    } else if (job.result?.downloadUrl) {
+      url = job.result.downloadUrl;
+    } else if (job.result?.files?.length > 0) {
+      url = job.result.files[0].downloadUrl;
+    }
+    
+    if (url) {
+      window.open(url, '_blank');
     }
   };
 
@@ -189,52 +205,71 @@ export default function JobsPanel({ jobs, isOpen, onClose }) {
                             {job.result.files.length} files ready
                           </p>
                           {job.result.files.map((file, idx) => (
-                            <button
-                              key={idx}
-                              onClick={() => handleDownload(job, idx)}
-                              disabled={downloading[`${job.id}-${idx}`]}
-                              className="btn-secondary w-full flex items-center justify-center gap-2 text-xs py-2 disabled:opacity-50"
-                            >
-                              {downloading[`${job.id}-${idx}`] ? (
-                                <Loader2 className="w-3 h-3 animate-spin" />
-                              ) : (
-                                <Download className="w-3 h-3" />
-                              )}
-                              {file.pageRange ? `Pages ${file.pageRange}` : `File ${idx + 1}`}
-                            </button>
+                            <div key={idx} className="flex gap-2">
+                              <button
+                                onClick={() => handleDownload(job, idx)}
+                                disabled={downloading[`${job.id}-${idx}`]}
+                                className="btn-secondary flex-1 flex items-center justify-center gap-2 text-xs py-2 disabled:opacity-50"
+                              >
+                                {downloading[`${job.id}-${idx}`] ? (
+                                  <Loader2 className="w-3 h-3 animate-spin" />
+                                ) : (
+                                  <Download className="w-3 h-3" />
+                                )}
+                                {file.pageRange ? `Pages ${file.pageRange}` : `File ${idx + 1}`}
+                              </button>
+                              <button
+                                onClick={() => handlePreview(job, idx)}
+                                className="btn-secondary flex items-center justify-center gap-1.5 text-xs py-2 px-3"
+                                title="Preview"
+                              >
+                                <Eye className="w-3 h-3" />
+                              </button>
+                            </div>
                           ))}
-                          <button
-                            onClick={() => handleDownload(job)}
-                            disabled={downloading[job.id]}
-                            className="btn-primary w-full flex items-center justify-center gap-2 text-xs py-2.5 mt-2 disabled:opacity-50"
-                          >
-                            {downloading[job.id] ? (
-                              <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                            ) : (
-                              <Download className="w-3.5 h-3.5" />
-                            )}
-                            Download All
-                          </button>
+                          <div className="flex gap-2 mt-2">
+                            <button
+                              onClick={() => handleDownload(job)}
+                              disabled={downloading[job.id]}
+                              className="btn-primary flex-1 flex items-center justify-center gap-2 text-xs py-2.5 disabled:opacity-50"
+                            >
+                              {downloading[job.id] ? (
+                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                              ) : (
+                                <Download className="w-3.5 h-3.5" />
+                              )}
+                              Download All
+                            </button>
+                          </div>
                         </div>
                       ) : (
                         /* Single file */
-                        <button
-                          onClick={() => handleDownload(job)}
-                          disabled={downloading[job.id]}
-                          className="btn-primary w-full flex items-center justify-center gap-2 text-xs py-2.5 disabled:opacity-50"
-                        >
-                          {downloading[job.id] ? (
-                            <>
-                              <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                              Downloading...
-                            </>
-                          ) : (
-                            <>
-                              <Download className="w-3.5 h-3.5" />
-                              Download
-                            </>
-                          )}
-                        </button>
+                        <div className="space-y-2">
+                          <button
+                            onClick={() => handleDownload(job)}
+                            disabled={downloading[job.id]}
+                            className="btn-primary w-full flex items-center justify-center gap-2 text-xs py-2.5 disabled:opacity-50"
+                          >
+                            {downloading[job.id] ? (
+                              <>
+                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                Downloading...
+                              </>
+                            ) : (
+                              <>
+                                <Download className="w-3.5 h-3.5" />
+                                Download
+                              </>
+                            )}
+                          </button>
+                          <button
+                            onClick={() => handlePreview(job)}
+                            className="btn-secondary w-full flex items-center justify-center gap-2 text-xs py-2"
+                          >
+                            <Eye className="w-3.5 h-3.5" />
+                            Preview
+                          </button>
+                        </div>
                       )}
                     </div>
                   )}
