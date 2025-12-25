@@ -149,9 +149,6 @@ CLOUDCONVERT_API_KEY=your_cloudconvert_api_key
 # Optional - Password to protect CloudConvert features (default: optinexus2024)
 CLOUDCONVERT_PASSWORD=your_secure_password_here
 
-# Optional - Secret for protecting cleanup endpoint (production)
-CRON_SECRET=your_random_secret_here
-
 # Optional - File time-to-live in milliseconds (default: 30 minutes)
 FILE_TTL_MS=1800000
 ```
@@ -292,17 +289,6 @@ All image operations use a single endpoint with an `action` parameter:
 **POST `/api/upload`** - Upload files  
 **GET `/api/download?url=xxx&filename=yyy`** - Download processed files
 
-### Auto-Cleanup
-
-**GET/POST `/api/cleanup`** - Trigger manual cleanup (protected in production)
-
-Files are automatically deleted after 30 minutes (configurable via `FILE_TTL_MS` env var).
-
-| Environment | Cleanup Method |
-|-------------|----------------|
-| **Production** | Vercel Cron (every 15 minutes) |
-| **Development** | Auto-timer (every 5 minutes) |
-
 ### Password Protection
 
 **POST `/api/verify-password`** - Verify password for CloudConvert features
@@ -340,11 +326,9 @@ CloudConvert features (PDF ↔ DOCX/PPTX conversions) are password protected. Us
 
 ## 🔒 Privacy & Security
 
-- **Auto-delete** - Files automatically deleted after 30 minutes
-- **No permanent storage** - Files are processed and cleaned up
+- **No permanent storage** - Files are processed and stored temporarily
 - **Client-side uploads** - Direct to Vercel Blob
 - **Stateless backend** - No database or user tracking
-- **Cron cleanup** - Vercel Cron runs every 15 minutes to remove expired files
 
 ## 📄 License
 
