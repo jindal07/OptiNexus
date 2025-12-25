@@ -1,0 +1,25 @@
+{
+  "name": "pdf-flow",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "concurrently \"npm run dev:api\" \"npm run dev:frontend\"",
+    "dev:api": "node api/index.js",
+    "dev:frontend": "cd frontend && npm run dev",
+    "build": "cd frontend && npm run build",
+    "install:all": "npm install && cd frontend && npm install"
+  },
+  "dependencies": {
+    "@vercel/blob": "^0.23.4",
+    "cloudconvert": "^2.2.0",
+    "cors": "^2.8.5",
+    "express": "^4.22.1",
+    "pdf-lib": "^1.17.1",
+    "sharp": "^0.33.2"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2",
+    "vercel": "^37.0.0"
+  }
+}

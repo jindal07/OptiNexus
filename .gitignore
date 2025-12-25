@@ -1,0 +1,17 @@
+.env
+.env.*
+node_modules
+.DS_Store
+
+# Local development
+uploads/
+frontend/dist/
+
+# Vercel
+.vercel
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo          

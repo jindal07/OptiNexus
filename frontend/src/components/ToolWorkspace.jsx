@@ -1,0 +1,304 @@
+import { useState, useCallback } from 'react';
+import { ArrowLeft, Settings2, Play, Loader2, AlertCircle } from 'lucide-react';
+import FileUploader from './FileUploader';
+import { uploadToBlob } from '../utils/blob';
+import { processFiles } from '../utils/api';
+
+const TOOL_OPTIONS = {
+  'rotate': [
+    { id: 'angle', type: 'select', label: 'Rotation', options: ['90', '180', '270'], default: '90' }
+  ],
+  'watermark': [
+    { id: 'text', type: 'text', label: 'Watermark Text', default: 'CONFIDENTIAL' },
+    { id: 'opacity', type: 'range', label: 'Opacity', min: 0.1, max: 1, step: 0.1, default: 0.3 },
+    { id: 'fontSize', type: 'number', label: 'Font Size', default: 50 }
+  ],
+  'split': [
+    { id: 'ranges', type: 'text', label: 'Page Ranges', placeholder: 'e.g., 1-3,5,7-10 (empty = all pages)' }
+  ],
+  'image-compress': [
+    { id: 'quality', type: 'range', label: 'Quality', min: 10, max: 100, step: 5, default: 80 },
+    { id: 'format', type: 'select', label: 'Output Format', options: ['webp', 'jpeg', 'png'], default: 'webp' }
+  ],
+  'image-upscale': [
+    { id: 'scale', type: 'select', label: 'Scale Factor', options: ['2', '4'], default: '2' }
+  ],
+  'image-resize': [
+    { id: 'width', type: 'number', label: 'Width (px)', placeholder: 'Auto if empty' },
+    { id: 'height', type: 'number', label: 'Height (px)', placeholder: 'Auto if empty' },
+    { id: 'fit', type: 'select', label: 'Fit Mode', options: ['cover', 'contain', 'fill', 'inside'], default: 'cover' }
+  ],
+  'image-convert': [
+    { id: 'format', type: 'select', label: 'Output Format', options: ['webp', 'jpeg', 'png', 'gif'], default: 'webp' },
+    { id: 'quality', type: 'range', label: 'Quality', min: 10, max: 100, step: 5, default: 90 }
+  ]
+};
+
+export default function ToolWorkspace({ tool, onBack, addJob, updateJob }) {
+  const [files, setFiles] = useState([]);
+  const [options, setOptions] = useState(() => {
+    const toolOpts = TOOL_OPTIONS[tool.id] || [];
+    const defaults = {};
+    toolOpts.forEach(opt => {
+      if (opt.default !== undefined) defaults[opt.id] = opt.default;
+    });
+    return defaults;
+  });
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [error, setError] = useState(null);
+
+  const handleFilesChange = useCallback((newFiles) => {
+    setFiles(newFiles);
+    setError(null);
+  }, []);
+
+  const handleOptionChange = (id, value) => {
+    setOptions(prev => ({ ...prev, [id]: value }));
+  };
+
+  const handleProcess = async () => {
+    if (files.length === 0) {
+      setError('Please upload at least one file');
+      return;
+    }
+
+    if (tool.multiple && tool.id === 'merge' && files.length < 2) {
+      setError('Please upload at least 2 files to merge');
+      return;
+    }
+
+    setIsProcessing(true);
+    setError(null);
+    setUploadProgress(0);
+
+    const jobId = `job-${Date.now()}`;
+
+    try {
+      // Create job entry
+      addJob({
+        id: jobId,
+        type: tool.name,
+        toolId: tool.id,
+        status: 'uploading',
+        progress: 0,
+        message: 'Uploading files...',
+        files: files.map(f => f.name),
+        createdAt: new Date()
+      });
+
+      // Upload files to Vercel Blob
+      const uploadedUrls = [];
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        updateJob(jobId, { 
+          message: `Uploading ${file.name}...`,
+          progress: Math.round((i / files.length) * 50)
+        });
+        
+        const url = await uploadToBlob(file);
+        uploadedUrls.push(url);
+        setUploadProgress(Math.round(((i + 1) / files.length) * 100));
+      }
+
+      updateJob(jobId, { 
+        status: 'processing',
+        message: 'Processing...',
+        progress: 50
+      });
+
+      // Process files via API
+      const result = await processFiles(tool.id, uploadedUrls, options, (progress) => {
+        updateJob(jobId, { progress: 50 + Math.round(progress * 0.5) });
+      });
+
+      updateJob(jobId, {
+        status: 'completed',
+        progress: 100,
+        message: 'Complete',
+        result
+      });
+
+      // Clear files after success
+      setFiles([]);
+      setUploadProgress(0);
+
+    } catch (err) {
+      console.error('Processing error:', err);
+      setError(err.message);
+      updateJob(jobId, {
+        status: 'error',
+        error: err.message
+      });
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const toolOptions = TOOL_OPTIONS[tool.id] || [];
+  const isMultiFile = tool.multiple;
+  const acceptTypes = tool.accept || (
+    tool.id.includes('image') 
+      ? 'image/jpeg,image/png,image/webp,image/gif'
+      : 'application/pdf'
+  );
+
+  return (
+    <div className="animate-slide-up">
+      {/* Header */}
+      <div className="flex items-center gap-4 mb-6">
+        <button
+          onClick={onBack}
+          className="p-2 rounded-xl bg-surface-800/50 border border-white/10 hover:border-white/20 transition-all"
+        >
+          <ArrowLeft className="w-5 h-5 text-surface-400" />
+        </button>
+        <div>
+          <h2 className="text-xl font-display font-bold text-white">{tool.name}</h2>
+          <p className="text-sm text-surface-400">{tool.desc}</p>
+        </div>
+        {tool.requiresCloudConvert && (
+          <span className="text-xs text-amber-400 bg-amber-500/10 px-3 py-1 rounded-full border border-amber-500/20">
+            Requires CloudConvert API Key
+          </span>
+        )}
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+        {/* Upload Area */}
+        <div className="lg:col-span-2">
+          <FileUploader
+            files={files}
+            onFilesChange={handleFilesChange}
+            multiple={isMultiFile}
+            accept={acceptTypes}
+            maxFiles={20}
+            maxSize={100 * 1024 * 1024}
+            disabled={isProcessing}
+          />
+
+          {/* Upload Progress */}
+          {isProcessing && uploadProgress > 0 && uploadProgress < 100 && (
+            <div className="mt-4 glass-card p-4">
+              <div className="flex justify-between text-sm mb-2">
+                <span className="text-surface-400">Uploading files...</span>
+                <span className="text-brand-400">{uploadProgress}%</span>
+              </div>
+              <div className="h-2 bg-surface-800 rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-gradient-to-r from-brand-500 to-brand-400 rounded-full transition-all duration-300 progress-striped"
+                  style={{ width: `${uploadProgress}%` }}
+                />
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Options Panel */}
+        <div className="glass-card p-5">
+          <div className="flex items-center gap-2 mb-5">
+            <Settings2 className="w-4 h-4 text-brand-400" />
+            <h3 className="font-semibold text-white text-sm">Options</h3>
+          </div>
+
+          {toolOptions.length > 0 ? (
+            <div className="space-y-4">
+              {toolOptions.map((opt) => (
+                <div key={opt.id}>
+                  <label className="block text-xs font-medium text-surface-300 mb-1.5">
+                    {opt.label}
+                  </label>
+                  
+                  {opt.type === 'select' && (
+                    <select
+                      value={options[opt.id] || opt.default || ''}
+                      onChange={(e) => handleOptionChange(opt.id, e.target.value)}
+                      className="input-field text-sm py-2"
+                      disabled={isProcessing}
+                    >
+                      {opt.options.map(o => (
+                        <option key={o} value={o}>{o.toUpperCase()}</option>
+                      ))}
+                    </select>
+                  )}
+
+                  {opt.type === 'text' && (
+                    <input
+                      type="text"
+                      value={options[opt.id] || ''}
+                      onChange={(e) => handleOptionChange(opt.id, e.target.value)}
+                      placeholder={opt.placeholder || ''}
+                      className="input-field text-sm py-2"
+                      disabled={isProcessing}
+                    />
+                  )}
+
+                  {opt.type === 'number' && (
+                    <input
+                      type="number"
+                      value={options[opt.id] || ''}
+                      onChange={(e) => handleOptionChange(opt.id, e.target.value)}
+                      placeholder={opt.placeholder || ''}
+                      className="input-field text-sm py-2"
+                      disabled={isProcessing}
+                    />
+                  )}
+
+                  {opt.type === 'range' && (
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="range"
+                        min={opt.min}
+                        max={opt.max}
+                        step={opt.step}
+                        value={options[opt.id] || opt.default}
+                        onChange={(e) => handleOptionChange(opt.id, parseFloat(e.target.value))}
+                        className="flex-1 accent-brand-500"
+                        disabled={isProcessing}
+                      />
+                      <span className="text-xs text-surface-400 w-10 text-right">
+                        {options[opt.id] || opt.default}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-surface-400 text-xs">
+              No additional options for this tool.
+            </p>
+          )}
+
+          {/* Error Message */}
+          {error && (
+            <div className="mt-4 p-3 rounded-lg bg-red-500/10 border border-red-500/20 flex items-start gap-2">
+              <AlertCircle className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" />
+              <p className="text-xs text-red-400">{error}</p>
+            </div>
+          )}
+
+          {/* Process Button */}
+          <button
+            onClick={handleProcess}
+            disabled={isProcessing || files.length === 0}
+            className="btn-primary w-full mt-5 flex items-center justify-center gap-2 text-sm py-2.5"
+          >
+            {isProcessing ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Processing...
+              </>
+            ) : (
+              <>
+                <Play className="w-4 h-4" />
+                Process {files.length > 0 ? `(${files.length})` : ''}
+              </>
+            )}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
