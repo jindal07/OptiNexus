@@ -167,15 +167,34 @@ async function handleWatermark(req, res) {
   const { 
     url, 
     text = 'WATERMARK', 
-    opacity = 0.3, 
-    fontSize = 50,
+    opacity: opacityInput = 0.3, 
+    fontSize: fontSizeInput = 50,
     color = '#888888'
   } = req.body;
+
+  // Convert string inputs to numbers
+  const opacity = typeof opacityInput === 'string' ? parseFloat(opacityInput) : opacityInput;
+  const fontSize = typeof fontSizeInput === 'string' ? parseInt(fontSizeInput, 10) : fontSizeInput;
 
   if (!url) {
     return res.status(400).json({
       success: false,
       error: 'PDF URL is required'
+    });
+  }
+
+  // Validate numeric values
+  if (isNaN(opacity) || opacity < 0 || opacity > 1) {
+    return res.status(400).json({
+      success: false,
+      error: 'Opacity must be a number between 0 and 1'
+    });
+  }
+
+  if (isNaN(fontSize) || fontSize < 1 || fontSize > 500) {
+    return res.status(400).json({
+      success: false,
+      error: 'Font size must be a number between 1 and 500'
     });
   }
 

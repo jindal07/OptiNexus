@@ -78,7 +78,7 @@ async function handleCompress(req, res) {
 }
 
 async function handleResize(req, res) {
-  const { url, width, height, fit = 'cover' } = req.body;
+  const { url, width: widthInput, height: heightInput, fit = 'cover' } = req.body;
 
   if (!url) {
     return res.status(400).json({
@@ -87,6 +87,10 @@ async function handleResize(req, res) {
     });
   }
 
+  // Convert string inputs to numbers
+  const width = widthInput ? parseInt(String(widthInput), 10) : undefined;
+  const height = heightInput ? parseInt(String(heightInput), 10) : undefined;
+
   if (!width && !height) {
     return res.status(400).json({
       success: false,
@@ -94,9 +98,24 @@ async function handleResize(req, res) {
     });
   }
 
+  // Validate numeric values
+  if (width !== undefined && (isNaN(width) || width < 1 || width > 10000)) {
+    return res.status(400).json({
+      success: false,
+      error: 'Width must be a number between 1 and 10000'
+    });
+  }
+
+  if (height !== undefined && (isNaN(height) || height < 1 || height > 10000)) {
+    return res.status(400).json({
+      success: false,
+      error: 'Height must be a number between 1 and 10000'
+    });
+  }
+
   const { buffer, width: outWidth, height: outHeight, format } = await resizeImage(url, {
-    width: width ? parseInt(width) : undefined,
-    height: height ? parseInt(height) : undefined,
+    width,
+    height,
     fit
   });
 
