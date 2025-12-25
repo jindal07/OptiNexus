@@ -175,20 +175,70 @@ app.post('/api/image', async (req, res) => {
   }
 });
 
+// Cleanup endpoint (for testing and manual cleanup)
+app.get('/api/cleanup', async (req, res) => {
+  try {
+    const handler = (await import('./api/cleanup.js')).default;
+    return handler(req, res);
+  } catch (error) {
+    console.error('Cleanup error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+app.post('/api/cleanup', async (req, res) => {
+  try {
+    const handler = (await import('./api/cleanup.js')).default;
+    return handler(req, res);
+  } catch (error) {
+    console.error('Cleanup error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 // Catch-all for API routes
 app.all('/api/*', (req, res) => {
   res.status(404).json({ success: false, error: 'API endpoint not found' });
 });
 
+// Auto-cleanup timer for local development (runs every 5 minutes)
+const CLEANUP_INTERVAL = 5 * 60 * 1000; // 5 minutes
+
+async function runLocalCleanup() {
+  try {
+    const { cleanupExpiredFiles, getFileTTLFormatted } = await import('./api/lib/blob-utils.js');
+    const { deleted, errors } = await cleanupExpiredFiles();
+    if (deleted > 0 || errors > 0) {
+      console.log(`[Auto-Cleanup] Deleted: ${deleted} files, Errors: ${errors}`);
+    }
+  } catch (error) {
+    console.error('[Auto-Cleanup] Error:', error.message);
+  }
+}
+
 // Start server
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
+  // Get TTL for display
+  let ttlDisplay = '30m';
+  try {
+    const { getFileTTLFormatted } = await import('./api/lib/blob-utils.js');
+    ttlDisplay = getFileTTLFormatted();
+  } catch (e) {}
+
   console.log(`
 ╔═══════════════════════════════════════════════════════════╗
 ║                                                           ║
-║   🚀 PDF-Flow API Server (Development)                    ║
+║   🚀 OptiNexus API Server (Development)                   ║
 ║   📡 Port: ${PORT}                                          ║
 ║   🔗 http://localhost:${PORT}                               ║
+║   🗑️  Auto-cleanup: Every 5 min (TTL: ${ttlDisplay.padEnd(4)})              ║
 ║                                                           ║
 ╚═══════════════════════════════════════════════════════════╝
   `);
+
+  // Start auto-cleanup timer
+  setInterval(runLocalCleanup, CLEANUP_INTERVAL);
+  
+  // Run initial cleanup
+  runLocalCleanup();
 });

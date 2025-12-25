@@ -8,6 +8,9 @@ const __dirname = path.dirname(__filename);
 // Check if we're in local development mode (no Vercel Blob token)
 const isLocalDev = !process.env.BLOB_READ_WRITE_TOKEN;
 
+// Auto-delete configuration (30 minutes = 1800000ms)
+const FILE_TTL_MS = parseInt(process.env.FILE_TTL_MS) || 30 * 60 * 1000;
+
 /**
  * Upload buffer to storage (Vercel Blob or local filesystem)
  * @param {Buffer|Uint8Array} buffer - File buffer
@@ -114,4 +117,103 @@ export function getExtension(contentType) {
   };
 
   return extensions[contentType] || 'bin';
+}
+
+/**
+ * Clean up expired files from storage
+ * @returns {Promise<{deleted: number, errors: number}>}
+ */
+export async function cleanupExpiredFiles() {
+  const now = Date.now();
+  let deleted = 0;
+  let errors = 0;
+
+  if (isLocalDev) {
+    // Local development: clean up old files from uploads folder
+    try {
+      const uploadsDir = path.join(__dirname, '../../uploads');
+      
+      // Check if uploads directory exists
+      try {
+        await fs.access(uploadsDir);
+      } catch {
+        // Directory doesn't exist, nothing to clean
+        return { deleted: 0, errors: 0 };
+      }
+
+      const files = await fs.readdir(uploadsDir);
+      
+      for (const file of files) {
+        try {
+          const filePath = path.join(uploadsDir, file);
+          const stats = await fs.stat(filePath);
+          const fileAge = now - stats.mtimeMs;
+          
+          if (fileAge > FILE_TTL_MS) {
+            await fs.unlink(filePath);
+            deleted++;
+            console.log(`[Cleanup] Deleted expired file: ${file}`);
+          }
+        } catch (err) {
+          console.error(`[Cleanup] Error deleting file ${file}:`, err.message);
+          errors++;
+        }
+      }
+    } catch (err) {
+      console.error('[Cleanup] Error reading uploads directory:', err.message);
+      errors++;
+    }
+  } else {
+    // Production: clean up old files from Vercel Blob
+    try {
+      const { list, del } = await import('@vercel/blob');
+      
+      let cursor;
+      do {
+        const { blobs, cursor: nextCursor } = await list({ cursor, limit: 100 });
+        cursor = nextCursor;
+        
+        for (const blob of blobs) {
+          try {
+            const uploadedAt = new Date(blob.uploadedAt).getTime();
+            const fileAge = now - uploadedAt;
+            
+            if (fileAge > FILE_TTL_MS) {
+              await del(blob.url);
+              deleted++;
+              console.log(`[Cleanup] Deleted expired blob: ${blob.pathname}`);
+            }
+          } catch (err) {
+            console.error(`[Cleanup] Error deleting blob ${blob.pathname}:`, err.message);
+            errors++;
+          }
+        }
+      } while (cursor);
+    } catch (err) {
+      console.error('[Cleanup] Error listing blobs:', err.message);
+      errors++;
+    }
+  }
+
+  return { deleted, errors };
+}
+
+/**
+ * Get the configured TTL in milliseconds
+ */
+export function getFileTTL() {
+  return FILE_TTL_MS;
+}
+
+/**
+ * Get the configured TTL in human-readable format
+ */
+export function getFileTTLFormatted() {
+  const minutes = Math.floor(FILE_TTL_MS / 60000);
+  if (minutes >= 60) {
+    const hours = Math.floor(minutes / 60);
+    const remainingMinutes = minutes % 60;
+    return remainingMinutes > 0 ? `${hours}h ${remainingMinutes}m` : `${hours}h`;
+  }
+  return `${minutes}m`;
 }

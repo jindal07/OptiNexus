@@ -145,6 +145,12 @@ BLOB_READ_WRITE_TOKEN=your_vercel_blob_token
 
 # Optional - For Office document conversions
 CLOUDCONVERT_API_KEY=your_cloudconvert_api_key
+
+# Optional - Secret for protecting cleanup endpoint (production)
+CRON_SECRET=your_random_secret_here
+
+# Optional - File time-to-live in milliseconds (default: 30 minutes)
+FILE_TTL_MS=1800000
 ```
 
 ### Local Development
@@ -283,6 +289,17 @@ All image operations use a single endpoint with an `action` parameter:
 **POST `/api/upload`** - Upload files  
 **GET `/api/download?url=xxx&filename=yyy`** - Download processed files
 
+### Auto-Cleanup
+
+**GET/POST `/api/cleanup`** - Trigger manual cleanup (protected in production)
+
+Files are automatically deleted after 30 minutes (configurable via `FILE_TTL_MS` env var).
+
+| Environment | Cleanup Method |
+|-------------|----------------|
+| **Production** | Vercel Cron (every 15 minutes) |
+| **Development** | Auto-timer (every 5 minutes) |
+
 ## ⚠️ Limitations
 
 | Limit | Value |
@@ -303,10 +320,11 @@ All image operations use a single endpoint with an `action` parameter:
 
 ## 🔒 Privacy & Security
 
-- **No permanent storage** - Files are processed and deleted
+- **Auto-delete** - Files automatically deleted after 30 minutes
+- **No permanent storage** - Files are processed and cleaned up
 - **Client-side uploads** - Direct to Vercel Blob
 - **Stateless backend** - No database or user tracking
-- **Auto-cleanup** - Processed files are temporary
+- **Cron cleanup** - Vercel Cron runs every 15 minutes to remove expired files
 
 ## 📄 License
 
