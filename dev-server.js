@@ -18,81 +18,46 @@ app.use(cors());
 app.use(express.json({ limit: '100mb' }));
 
 // Serve uploaded files statically (for local development)
-app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Health check
 app.get('/api/health', async (req, res) => {
-  const handler = (await import('./health.js')).default;
+  const handler = (await import('./api/health.js')).default;
   return handler(req, res);
 });
 
 // Upload endpoint
 app.post('/api/upload', async (req, res) => {
-  const handler = (await import('./upload.js')).default;
+  const handler = (await import('./api/upload.js')).default;
   return handler(req, res);
 });
 
 // Download endpoint
 app.get('/api/download', async (req, res) => {
-  const handler = (await import('./download.js')).default;
+  const handler = (await import('./api/download.js')).default;
   return handler(req, res);
 });
 
-// PDF endpoints
-app.post('/api/pdf/merge', async (req, res) => {
-  const handler = (await import('./pdf/merge.js')).default;
-  return handler(req, res);
-});
-
-app.post('/api/pdf/split', async (req, res) => {
-  const handler = (await import('./pdf/split.js')).default;
-  return handler(req, res);
-});
-
-app.post('/api/pdf/compress', async (req, res) => {
-  const handler = (await import('./pdf/compress.js')).default;
-  return handler(req, res);
-});
-
-app.post('/api/pdf/rotate', async (req, res) => {
-  const handler = (await import('./pdf/rotate.js')).default;
-  return handler(req, res);
-});
-
-app.post('/api/pdf/watermark', async (req, res) => {
-  const handler = (await import('./pdf/watermark.js')).default;
+// Combined PDF endpoint with action query param
+app.post('/api/pdf', async (req, res) => {
+  const handler = (await import('./api/pdf.js')).default;
   return handler(req, res);
 });
 
 // Convert endpoint (CloudConvert)
 app.post('/api/convert', async (req, res) => {
-  const handler = (await import('./convert.js')).default;
+  const handler = (await import('./api/convert.js')).default;
   return handler(req, res);
 });
 
 app.get('/api/convert', async (req, res) => {
-  const handler = (await import('./convert.js')).default;
+  const handler = (await import('./api/convert.js')).default;
   return handler(req, res);
 });
 
-// Image endpoints
-app.post('/api/image/compress', async (req, res) => {
-  const handler = (await import('./image/compress.js')).default;
-  return handler(req, res);
-});
-
-app.post('/api/image/resize', async (req, res) => {
-  const handler = (await import('./image/resize.js')).default;
-  return handler(req, res);
-});
-
-app.post('/api/image/convert', async (req, res) => {
-  const handler = (await import('./image/convert.js')).default;
-  return handler(req, res);
-});
-
-app.post('/api/image/upscale', async (req, res) => {
-  const handler = (await import('./image/upscale.js')).default;
+// Combined Image endpoint with action query param
+app.post('/api/image', async (req, res) => {
+  const handler = (await import('./api/image.js')).default;
   return handler(req, res);
 });
 

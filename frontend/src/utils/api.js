@@ -1,22 +1,22 @@
 const API_BASE = '/api';
 
 /**
- * API endpoints mapping
+ * API endpoints mapping - consolidated for Vercel Hobby plan (12 function limit)
  */
 const ENDPOINTS = {
-  'merge': '/pdf/merge',
-  'split': '/pdf/split',
-  'compress': '/pdf/compress',
-  'rotate': '/pdf/rotate',
-  'watermark': '/pdf/watermark',
+  'merge': '/pdf?action=merge',
+  'split': '/pdf?action=split',
+  'compress': '/pdf?action=compress',
+  'rotate': '/pdf?action=rotate',
+  'watermark': '/pdf?action=watermark',
   'pdf-to-docx': '/convert',
   'pdf-to-pptx': '/convert',
   'docx-to-pdf': '/convert',
   'pptx-to-pdf': '/convert',
-  'image-compress': '/image/compress',
-  'image-upscale': '/image/upscale',
-  'image-resize': '/image/resize',
-  'image-convert': '/image/convert',
+  'image-compress': '/image?action=compress',
+  'image-upscale': '/image?action=upscale',
+  'image-resize': '/image?action=resize',
+  'image-convert': '/image?action=convert',
 };
 
 /**
