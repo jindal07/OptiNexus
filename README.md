@@ -1,161 +1,215 @@
-# PDF-Flow v2.0
+# OptiNexus
 
-A serverless PDF and Image manipulation tool optimized for Vercel deployment.
+> **A hub for optimizing every digital asset you own.**
 
-## Architecture
+A modern, serverless PDF and Image manipulation tool with a beautiful UI, optimized for Vercel deployment.
+
+![OptiNexus](https://img.shields.io/badge/OptiNexus-Digital%20Asset%20Optimization-83a02c?style=for-the-badge)
+![React](https://img.shields.io/badge/React-18-61dafb?style=flat-square&logo=react)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind-3.4-38bdf8?style=flat-square&logo=tailwindcss)
+![Vercel](https://img.shields.io/badge/Vercel-Serverless-000?style=flat-square&logo=vercel)
+
+## ✨ Features
+
+### 📄 PDF Suite
+| Feature | Description |
+|---------|-------------|
+| **Merge** | Combine multiple PDFs into one |
+| **Split** | Extract specific pages or ranges |
+| **Compress** | Reduce file size while maintaining quality |
+| **Rotate** | Rotate pages by 90°, 180°, or 270° |
+| **Watermark** | Add customizable text watermarks |
+| **PDF → DOCX** | Convert PDF to editable Word document |
+| **PDF → PPTX** | Convert PDF to PowerPoint presentation |
+| **DOCX → PDF** | Convert Word documents to PDF |
+| **PPTX → PDF** | Convert PowerPoint to PDF |
+
+### 🖼️ Image Suite
+| Feature | Description |
+|---------|-------------|
+| **Compress** | Reduce image file size with quality control |
+| **Upscale** | 2x or 4x AI-powered upscaling |
+| **Resize** | Change dimensions with various fit options |
+| **Convert** | Convert between PNG, JPG, WebP, AVIF |
+
+## 🏗️ Architecture
 
 ```
-┌─────────────────┐     ┌──────────────────┐     ┌─────────────────┐
-│                 │     │                  │     │                 │
-│  React Frontend │────▶│  Vercel Blob     │────▶│ Serverless API  │
-│  (Vite + TW)    │     │  (File Storage)  │     │ (Node.js)       │
-│                 │     │                  │     │                 │
-└─────────────────┘     └──────────────────┘     └─────────────────┘
-                                                         │
-                                                         ▼
-                                                ┌─────────────────┐
-                                                │  CloudConvert   │
-                                                │  (Office Conv)  │
-                                                └─────────────────┘
+┌─────────────────────────────────────────────────────────────────────┐
+│                         Frontend (React + Vite)                      │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌────────────┐  │
+│  │ File Upload │  │ Tool Cards  │  │ Job Tracker │  │ Downloads  │  │
+│  │ (Dropzone)  │  │ (Workspace) │  │ (Progress)  │  │            │  │
+│  └─────────────┘  └─────────────┘  └─────────────┘  └────────────┘  │
+└─────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│                    Vercel Serverless Functions                       │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────────────────┐ │
+│  │ /api/pdf │  │/api/image│  │/api/conv │  │ /api/upload|download │ │
+│  │ (pdf-lib)│  │ (sharp)  │  │(CloudConv)│ │   (Blob Storage)     │ │
+│  └──────────┘  └──────────┘  └──────────┘  └──────────────────────┘ │
+└─────────────────────────────────────────────────────────────────────┘
 ```
 
-## Tech Stack
+## 🛠️ Tech Stack
 
 ### Frontend
-- **React 18** with Vite
-- **Tailwind CSS** for styling
+- **React 18** with Vite for fast development
+- **Tailwind CSS** with custom design system
+- **Google Fonts** - Exo 2 (display) + Inter (body)
 - **Lucide React** for icons
-- **React Dropzone** for file uploads
-- **@vercel/blob** for direct uploads
+- **React Dropzone** for drag-and-drop uploads
+- **Axios** for API communication
 
 ### Backend (Serverless)
-- **Vercel Serverless Functions**
+- **Vercel Serverless Functions** (Node.js)
 - **pdf-lib** for PDF manipulation
 - **sharp** for image processing
-- **cloudconvert** for Office conversions
-- **@vercel/blob** for file storage
+- **CloudConvert API** for Office conversions
+- **Vercel Blob** for production file storage
+- **Multer** for local development uploads
 
-## Features
+### Design System
+A nature-inspired color palette with excellent contrast:
 
-### PDF Suite
-| Feature | Processing | Description |
-|---------|------------|-------------|
-| Merge | Server-side (pdf-lib) | Combine multiple PDFs |
-| Split | Server-side (pdf-lib) | Extract pages |
-| Compress | Server-side (pdf-lib) | Reduce file size |
-| Rotate | Server-side (pdf-lib) | Rotate pages |
-| Watermark | Server-side (pdf-lib) | Add text watermark |
-| PDF → DOCX | CloudConvert API | Convert to Word |
-| PDF → PPTX | CloudConvert API | Convert to PowerPoint |
-| DOCX → PDF | CloudConvert API | Convert from Word |
-| PPTX → PDF | CloudConvert API | Convert from PowerPoint |
+| Color | Usage |
+|-------|-------|
+| **Ivory** (Brand) | Primary accent, buttons, highlights |
+| **Dry Sage** | Secondary accent, hover states |
+| **Ebony** (Surface) | Backgrounds, cards |
+| **Dark Slate Grey** | Borders, subtle elements |
+| **Dim Grey** (Muted) | Secondary text, icons |
 
-### Image Suite
-| Feature | Processing | Description |
-|---------|------------|-------------|
-| Compress | Server-side (sharp) | Reduce file size |
-| Upscale | Server-side (sharp) | 2x/4x upscaling |
-| Resize | Server-side (sharp) | Change dimensions |
-| Convert | Server-side (sharp) | Format conversion |
-
-## Project Structure
+## 📁 Project Structure
 
 ```
-pdf-flow/
-├── api/                    # Vercel Serverless Functions
+optinexus/
+├── api/                      # Vercel Serverless Functions
 │   ├── lib/
-│   │   ├── blob-utils.js   # Vercel Blob helpers
-│   │   ├── cloudconvert.js # CloudConvert integration
-│   │   ├── image-utils.js  # Image processing (sharp)
-│   │   └── pdf-utils.js    # PDF processing (pdf-lib)
-│   ├── pdf/
-│   │   ├── merge.js
-│   │   ├── split.js
-│   │   ├── compress.js
-│   │   ├── rotate.js
-│   │   └── watermark.js
-│   ├── image/
-│   │   ├── compress.js
-│   │   ├── convert.js
-│   │   ├── resize.js
-│   │   └── upscale.js
-│   ├── convert.js          # CloudConvert endpoint
-│   ├── upload.js           # File upload endpoint
-│   └── health.js
+│   │   ├── blob-utils.js     # File storage utilities
+│   │   ├── cloudconvert.js   # CloudConvert integration
+│   │   ├── image-utils.js    # Image processing (sharp)
+│   │   └── pdf-utils.js      # PDF processing (pdf-lib)
+│   ├── pdf.js                # All PDF operations
+│   ├── image.js              # All image operations
+│   ├── convert.js            # CloudConvert endpoint
+│   ├── upload.js             # File upload handler
+│   ├── download.js           # File download handler
+│   └── health.js             # Health check endpoint
 ├── frontend/
+│   ├── public/
+│   │   ├── favicon.svg
+│   │   └── logo.png
 │   ├── src/
 │   │   ├── components/
+│   │   │   ├── Header.jsx
+│   │   │   ├── Sidebar.jsx
+│   │   │   ├── Dashboard.jsx
+│   │   │   ├── FileUploader.jsx
+│   │   │   ├── ToolWorkspace.jsx
+│   │   │   └── JobsPanel.jsx
 │   │   ├── utils/
-│   │   └── styles/
+│   │   │   └── api.js
+│   │   ├── styles/
+│   │   │   └── index.css
+│   │   ├── App.jsx
+│   │   └── main.jsx
+│   ├── index.html
+│   ├── tailwind.config.js
+│   ├── vite.config.js
 │   └── package.json
-├── vercel.json
+├── uploads/                  # Local dev file storage (gitignored)
+├── dev-server.js             # Local development API server
+├── vercel.json               # Vercel deployment config
 ├── package.json
 └── README.md
 ```
 
-## Getting Started
+## 🚀 Getting Started
 
 ### Prerequisites
-- Node.js 18+
-- Vercel account
-- Vercel Blob storage enabled
-- (Optional) CloudConvert API key for Office conversions
+- **Node.js 18+**
+- **npm** or **yarn**
+- **(Optional)** CloudConvert API key for Office conversions
+- **(Production)** Vercel account with Blob storage
 
 ### Environment Variables
 
-Create a `.env` file or set these in Vercel:
+Create a `.env` file in the root directory:
 
 ```env
+# Required for Production (Vercel)
 BLOB_READ_WRITE_TOKEN=your_vercel_blob_token
-CLOUDCONVERT_API_KEY=your_cloudconvert_api_key  # Optional
+
+# Optional - For Office document conversions
+CLOUDCONVERT_API_KEY=your_cloudconvert_api_key
 ```
 
 ### Local Development
 
-1. Install dependencies:
-```bash
-npm run install:all
-```
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/jindal07/OptiNexus.git
+   cd OptiNexus
+   ```
 
-2. Run the development server:
-```bash
-npm run dev
-```
+2. **Install dependencies**
+   ```bash
+   npm run install:all
+   ```
 
-3. Open http://localhost:5173
+3. **Start the development servers**
+   
+   In one terminal (API server):
+   ```bash
+   npm run dev:api
+   ```
+   
+   In another terminal (Frontend):
+   ```bash
+   cd frontend && npm run dev
+   ```
 
-### Deploy to Vercel
+4. **Open the app**
+   Navigate to [http://localhost:5173](http://localhost:5173)
 
-#### Option 1: GitHub Integration (Recommended)
+> **Note:** Local development uses file-based storage in the `uploads/` directory instead of Vercel Blob.
+
+## 🌐 Deploy to Vercel
+
+### Option 1: GitHub Integration (Recommended)
 
 1. **Push to GitHub**
    ```bash
    git init
    git add .
    git commit -m "Initial commit"
-   git remote add origin https://github.com/YOUR_USERNAME/pdf-flow.git
+   git remote add origin https://github.com/YOUR_USERNAME/optinexus.git
    git push -u origin main
    ```
 
 2. **Import in Vercel Dashboard**
    - Go to [vercel.com/new](https://vercel.com/new)
    - Import your GitHub repository
-   - Vercel auto-detects the configuration from `vercel.json`
+   - Vercel auto-detects the configuration
 
-3. **Set Environment Variables**
-   In Vercel Dashboard → Settings → Environment Variables:
-   | Variable | Required | Description |
-   |----------|----------|-------------|
-   | `BLOB_READ_WRITE_TOKEN` | ✅ Yes | Get from Vercel Blob storage |
-   | `CLOUDCONVERT_API_KEY` | ❌ Optional | For Office conversions |
-
-4. **Enable Vercel Blob Storage**
+3. **Enable Vercel Blob Storage**
    - Go to Storage → Create → Blob
    - Copy the `BLOB_READ_WRITE_TOKEN`
 
+4. **Set Environment Variables**
+   In Vercel Dashboard → Settings → Environment Variables:
+   
+   | Variable | Required | Description |
+   |----------|----------|-------------|
+   | `BLOB_READ_WRITE_TOKEN` | ✅ Yes | Vercel Blob storage token |
+   | `CLOUDCONVERT_API_KEY` | ❌ Optional | For Office conversions |
+
 5. **Deploy!**
 
-#### Option 2: Vercel CLI
+### Option 2: Vercel CLI
 
 ```bash
 npm i -g vercel
@@ -163,123 +217,103 @@ vercel login
 vercel --prod
 ```
 
-Then set environment variables in the dashboard.
+## 📡 API Reference
 
-## API Reference
+### PDF Operations
 
-### PDF Endpoints
+**POST `/api/pdf`**
 
-#### POST `/api/pdf/merge`
-Merge multiple PDFs.
-```json
-{
-  "urls": ["https://blob.url/file1.pdf", "https://blob.url/file2.pdf"]
-}
+All PDF operations use a single endpoint with an `action` parameter:
+
+```javascript
+// Merge PDFs
+{ action: "merge", urls: ["url1.pdf", "url2.pdf"] }
+
+// Split PDF
+{ action: "split", url: "file.pdf", ranges: "1-3,5,7-10" }
+
+// Compress PDF
+{ action: "compress", url: "file.pdf" }
+
+// Rotate PDF
+{ action: "rotate", url: "file.pdf", angle: 90, pages: "all" }
+
+// Add Watermark
+{ action: "watermark", url: "file.pdf", text: "CONFIDENTIAL", opacity: 0.3, fontSize: 50 }
 ```
 
-#### POST `/api/pdf/split`
-Split PDF into pages.
-```json
-{
-  "url": "https://blob.url/file.pdf",
-  "ranges": "1-3,5,7-10"  // Optional
-}
+### Image Operations
+
+**POST `/api/image`**
+
+All image operations use a single endpoint with an `action` parameter:
+
+```javascript
+// Compress Image
+{ action: "compress", url: "image.jpg", quality: 80, format: "webp" }
+
+// Upscale Image
+{ action: "upscale", url: "image.jpg", scale: 2 }
+
+// Resize Image
+{ action: "resize", url: "image.jpg", width: 800, height: 600, fit: "cover" }
+
+// Convert Format
+{ action: "convert", url: "image.jpg", format: "webp", quality: 90 }
 ```
 
-#### POST `/api/pdf/compress`
-Compress PDF.
-```json
-{
-  "url": "https://blob.url/file.pdf"
-}
+### Document Conversions
+
+**POST `/api/convert`**
+
+```javascript
+// PDF to DOCX/PPTX
+{ url: "file.pdf", type: "pdf-to-docx" }
+{ url: "file.pdf", type: "pdf-to-pptx" }
+
+// DOCX/PPTX to PDF
+{ url: "file.docx", type: "docx-to-pdf" }
+{ url: "file.pptx", type: "pptx-to-pdf" }
 ```
 
-#### POST `/api/pdf/rotate`
-Rotate PDF pages.
-```json
-{
-  "url": "https://blob.url/file.pdf",
-  "angle": 90,
-  "pages": "all"  // or "1,3,5"
-}
-```
+**GET `/api/convert?jobId=xxx`** - Poll conversion status
 
-#### POST `/api/pdf/watermark`
-Add watermark.
-```json
-{
-  "url": "https://blob.url/file.pdf",
-  "text": "CONFIDENTIAL",
-  "opacity": 0.3,
-  "fontSize": 50,
-  "color": "#888888"
-}
-```
+### File Operations
 
-### Conversion Endpoints
+**POST `/api/upload`** - Upload files  
+**GET `/api/download?url=xxx&filename=yyy`** - Download processed files
 
-#### POST `/api/convert`
-Start conversion job.
-```json
-{
-  "url": "https://blob.url/file.pdf",
-  "type": "pdf-to-docx"  // pdf-to-docx, pdf-to-pptx, docx-to-pdf, pptx-to-pdf
-}
-```
+## ⚠️ Limitations
 
-#### GET `/api/convert?jobId=xxx`
-Poll conversion status.
+| Limit | Value |
+|-------|-------|
+| Max File Size | 100MB |
+| Function Timeout | 60 seconds |
+| Memory | 1024MB |
+| Serverless Functions | 12 max (Hobby plan) |
 
-### Image Endpoints
+## 🎨 UI Features
 
-#### POST `/api/image/compress`
-Compress image.
-```json
-{
-  "url": "https://blob.url/image.jpg",
-  "quality": 80,
-  "format": "webp"
-}
-```
+- **Responsive Design** - Works on desktop, tablet, and mobile
+- **Dark Theme** - Easy on the eyes with nature-inspired colors
+- **Drag & Drop** - Easy file uploads
+- **Real-time Progress** - Track processing status
+- **Glass Morphism** - Modern frosted glass effects
+- **Smooth Animations** - Polished micro-interactions
 
-#### POST `/api/image/upscale`
-Upscale image.
-```json
-{
-  "url": "https://blob.url/image.jpg",
-  "scale": 2  // 2 or 4
-}
-```
+## 🔒 Privacy & Security
 
-#### POST `/api/image/resize`
-Resize image.
-```json
-{
-  "url": "https://blob.url/image.jpg",
-  "width": 800,
-  "height": 600,
-  "fit": "cover"
-}
-```
+- **No permanent storage** - Files are processed and deleted
+- **Client-side uploads** - Direct to Vercel Blob
+- **Stateless backend** - No database or user tracking
+- **Auto-cleanup** - Processed files are temporary
 
-#### POST `/api/image/convert`
-Convert image format.
-```json
-{
-  "url": "https://blob.url/image.jpg",
-  "format": "webp",
-  "quality": 90
-}
-```
+## 📄 License
 
-## Limitations
+MIT License - feel free to use this project for personal or commercial purposes.
 
-- **File Size**: 100MB max (Vercel Blob limit)
-- **Function Timeout**: 60 seconds max
-- **Memory**: 1024MB for serverless functions
-- **No WebSockets**: Uses polling for progress
+---
 
-## License
-
-MIT
-# OptiNexus
+<p align="center">
+  Made with ❤️ by <a href="https://github.com/jindal07">jindal07</a>
+</p>
