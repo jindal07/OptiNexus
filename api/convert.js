@@ -134,14 +134,22 @@ export default async function handler(req, res) {
     
     // Provide more specific error messages
     let errorMessage = error.message || 'Failed to convert file';
+    let statusCode = 500;
     
-    if (error.message?.includes('Invalid scope')) {
+    // Check for 402 status (free limit reached)
+    if (error.status === 402 || error.statusCode === 402 || 
+        error.message?.includes('402') || 
+        error.message?.toLowerCase().includes('limit') ||
+        error.message?.toLowerCase().includes('quota')) {
+      errorMessage = 'Free limit reached';
+      statusCode = 402;
+    } else if (error.message?.includes('Invalid scope')) {
       errorMessage = 'CloudConvert API key has insufficient permissions. Please regenerate your API key with task.read and task.write scopes.';
     } else if (error.message?.includes('FORBIDDEN')) {
       errorMessage = 'CloudConvert API access denied. Please check your API key permissions.';
     }
     
-    return res.status(500).json({
+    return res.status(statusCode).json({
       success: false,
       error: errorMessage
     });

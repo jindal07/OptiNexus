@@ -77,6 +77,10 @@ async function processConversion(type, url, onProgress) {
 
   if (!response.ok) {
     const error = await response.json();
+    // Check for 402 status (free limit reached)
+    if (response.status === 402) {
+      throw new Error('Free limit reached');
+    }
     throw new Error(error.error || 'Failed to convert file');
   }
 
