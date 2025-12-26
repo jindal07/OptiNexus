@@ -51,26 +51,18 @@ export default function ToolWorkspace({ tool, onBack, addJob, updateJob }) {
   const [error, setError] = useState(null);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [pendingProcess, setPendingProcess] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-  // Check if user is authenticated for CloudConvert
-  const isAuthenticated = () => {
-    const authenticated = sessionStorage.getItem('cloudconvert_authenticated');
-    const authTime = sessionStorage.getItem('cloudconvert_auth_time');
-    
-    if (!authenticated || !authTime) return false;
-    
-    // Check if authentication is still valid (24 hours)
-    const timeElapsed = Date.now() - parseInt(authTime);
-    const twentyFourHours = 24 * 60 * 60 * 1000;
-    
-    if (timeElapsed > twentyFourHours) {
-      sessionStorage.removeItem('cloudconvert_authenticated');
-      sessionStorage.removeItem('cloudconvert_auth_time');
-      return false;
+  // Show password modal when CloudConvert tool is selected
+  useEffect(() => {
+    if (tool.requiresCloudConvert) {
+      setIsAuthenticated(false);
+      setShowPasswordModal(true);
+    } else {
+      setIsAuthenticated(false);
+      setShowPasswordModal(false);
     }
-    
-    return authenticated === 'true';
-  };
+  }, [tool]);
 
   const handleFilesChange = useCallback((newFiles) => {
     setFiles(newFiles);
@@ -93,7 +85,7 @@ export default function ToolWorkspace({ tool, onBack, addJob, updateJob }) {
     }
 
     // Check if CloudConvert feature requires password
-    if (tool.requiresCloudConvert && !isAuthenticated()) {
+    if (tool.requiresCloudConvert && !isAuthenticated) {
       setPendingProcess(true);
       setShowPasswordModal(true);
       return;
@@ -158,6 +150,11 @@ export default function ToolWorkspace({ tool, onBack, addJob, updateJob }) {
       // Clear files after success
       setFiles([]);
       setUploadProgress(0);
+      
+      // Reset authentication so password is required for next use
+      if (tool.requiresCloudConvert) {
+        setIsAuthenticated(false);
+      }
 
     } catch (err) {
       console.error('Processing error:', err);
@@ -355,8 +352,14 @@ export default function ToolWorkspace({ tool, onBack, addJob, updateJob }) {
         onClose={() => {
           setShowPasswordModal(false);
           setPendingProcess(false);
+          // If user closes modal without authenticating, go back to dashboard
+          if (!isAuthenticated && !pendingProcess) {
+            onBack();
+          }
         }}
         onSuccess={() => {
+          setIsAuthenticated(true);
+          setShowPasswordModal(false);
           if (pendingProcess) {
             setPendingProcess(false);
             executeProcess();

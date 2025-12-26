@@ -29,12 +29,11 @@ export default function PasswordModal({ isOpen, onClose, onSuccess, toolName }) 
       const data = await response.json();
 
       if (data.success) {
-        // Store password in sessionStorage for this session
-        sessionStorage.setItem('cloudconvert_authenticated', 'true');
-        sessionStorage.setItem('cloudconvert_auth_time', Date.now().toString());
+        // Don't store password - require it every time
         setPassword('');
+        setError('');
+        // Only call onSuccess - let parent handle closing the modal
         onSuccess();
-        onClose();
       } else {
         setError(data.error || 'Incorrect password');
       }

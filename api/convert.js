@@ -130,7 +130,7 @@ export default async function handler(req, res) {
     });
 
   } catch (error) {
-    console.error('Conversion error:', error);
+    console.error('Conversion error:', error.message);
     
     // Provide more specific error messages
     let errorMessage = error.message || 'Failed to convert file';
