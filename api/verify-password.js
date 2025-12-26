@@ -1,3 +1,5 @@
+import { getSafeErrorMessage, getSafeErrorForLogging } from './lib/error-utils.js';
+
 /**
  * Password verification endpoint for CloudConvert features
  */
@@ -46,7 +48,7 @@ export default async function handler(req, res) {
       });
     }
   } catch (error) {
-    console.error('Password verification error:', error);
+    console.error('Password verification error:', getSafeErrorForLogging(error));
     return res.status(500).json({ 
       success: false, 
       error: 'Internal server error' 

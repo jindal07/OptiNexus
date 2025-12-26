@@ -12,6 +12,7 @@ import { fileURLToPath } from 'url';
 import path from 'path';
 import fs from 'fs/promises';
 import multer from 'multer';
+import { getSafeErrorMessage, getSafeErrorForLogging } from './api/lib/error-utils.js';
 
 // Log loaded env vars (without exposing full keys)
 console.log('Environment loaded:');
@@ -43,8 +44,8 @@ app.get('/api/health', async (req, res) => {
     const handler = (await import('./api/health.js')).default;
     return handler(req, res);
   } catch (error) {
-    console.error('Health check error:', error);
-    res.status(500).json({ success: false, error: error.message });
+    console.error('Health check error:', getSafeErrorForLogging(error));
+    res.status(500).json({ success: false, error: getSafeErrorMessage(error) });
   }
 });
 
@@ -76,8 +77,8 @@ app.post('/api/upload', upload.single('file'), async (req, res) => {
       size: req.file.size
     });
   } catch (error) {
-    console.error('Upload error:', error);
-    res.status(500).json({ success: false, error: error.message });
+    console.error('Upload error:', getSafeErrorForLogging(error));
+    res.status(500).json({ success: false, error: getSafeErrorMessage(error) });
   }
 });
 
@@ -124,8 +125,8 @@ app.get('/api/download', async (req, res) => {
       return res.send(buffer);
     }
   } catch (error) {
-    console.error('Download error:', error);
-    res.status(500).json({ success: false, error: error.message });
+    console.error('Download error:', getSafeErrorForLogging(error));
+    res.status(500).json({ success: false, error: getSafeErrorMessage(error) });
   }
 });
 
@@ -138,8 +139,8 @@ app.post('/api/pdf', async (req, res) => {
     const handler = (await import('./api/pdf.js')).default;
     return handler(req, res);
   } catch (error) {
-    console.error('PDF error:', error);
-    res.status(500).json({ success: false, error: error.message });
+    console.error('PDF error:', getSafeErrorForLogging(error));
+    res.status(500).json({ success: false, error: getSafeErrorMessage(error) });
   }
 });
 
@@ -149,8 +150,8 @@ app.post('/api/convert', async (req, res) => {
     const handler = (await import('./api/convert.js')).default;
     return handler(req, res);
   } catch (error) {
-    console.error('Convert error:', error);
-    res.status(500).json({ success: false, error: error.message });
+    console.error('Convert error:', getSafeErrorForLogging(error));
+    res.status(500).json({ success: false, error: getSafeErrorMessage(error) });
   }
 });
 
@@ -159,8 +160,8 @@ app.get('/api/convert', async (req, res) => {
     const handler = (await import('./api/convert.js')).default;
     return handler(req, res);
   } catch (error) {
-    console.error('Convert error:', error);
-    res.status(500).json({ success: false, error: error.message });
+    console.error('Convert error:', getSafeErrorForLogging(error));
+    res.status(500).json({ success: false, error: getSafeErrorMessage(error) });
   }
 });
 
@@ -170,8 +171,8 @@ app.post('/api/image', async (req, res) => {
     const handler = (await import('./api/image.js')).default;
     return handler(req, res);
   } catch (error) {
-    console.error('Image error:', error);
-    res.status(500).json({ success: false, error: error.message });
+    console.error('Image error:', getSafeErrorForLogging(error));
+    res.status(500).json({ success: false, error: getSafeErrorMessage(error) });
   }
 });
 
@@ -220,7 +221,7 @@ app.post('/api/verify-password', async (req, res) => {
       });
     }
   } catch (error) {
-    console.error('[Password] Verification error:', error);
+    console.error('[Password] Verification error:', getSafeErrorForLogging(error));
     return res.status(500).json({ 
       success: false, 
       error: 'Internal server error' 

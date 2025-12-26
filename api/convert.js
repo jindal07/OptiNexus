@@ -1,5 +1,6 @@
 import { convertFileBuffer, getJobStatus, getConversionFormats } from './lib/cloudconvert.js';
 import { uploadToBlob, getContentType } from './lib/blob-utils.js';
+import { getSafeErrorMessage, getSafeErrorForLogging } from './lib/error-utils.js';
 
 /**
  * POST /api/convert
@@ -36,10 +37,10 @@ export default async function handler(req, res) {
       });
 
     } catch (error) {
-      console.error('Job status error:', error);
+      console.error('Job status error:', getSafeErrorForLogging(error));
       return res.status(500).json({
         success: false,
-        error: error.message || 'Failed to get job status'
+        error: getSafeErrorMessage(error) || 'Failed to get job status'
       });
     }
   }
@@ -83,7 +84,10 @@ export default async function handler(req, res) {
     }
 
     // Download the file from URL first
-    console.log(`Downloading file from: ${url}`);
+    // Log only filename, not full URL (may contain sensitive data)
+    const urlParts = url.split('/');
+    const filename = urlParts[urlParts.length - 1] || 'file';
+    console.log(`Downloading file: ${filename}`);
     const fileResponse = await fetch(url);
     if (!fileResponse.ok) {
       return res.status(400).json({
@@ -117,7 +121,8 @@ export default async function handler(req, res) {
       getContentType(formats.output)
     );
 
-    console.log(`Conversion complete: ${uploaded.url}`);
+    // Log completion without exposing full URL
+    console.log(`Conversion complete: ${outputFilename}`);
 
     return res.status(200).json({
       success: true,
@@ -130,23 +135,28 @@ export default async function handler(req, res) {
     });
 
   } catch (error) {
-    console.error('Conversion error:', error.message);
+    // Log safe error (no sensitive data)
+    console.error('Conversion error:', getSafeErrorForLogging(error));
     
-    // Provide more specific error messages
-    let errorMessage = error.message || 'Failed to convert file';
+    // Provide more specific error messages (sanitized)
+    const safeMessage = getSafeErrorMessage(error);
+    let errorMessage = safeMessage || 'Failed to convert file';
     let statusCode = 500;
     
     // Check for 402 status (free limit reached)
     if (error.status === 402 || error.statusCode === 402 || 
-        error.message?.includes('402') || 
-        error.message?.toLowerCase().includes('limit') ||
-        error.message?.toLowerCase().includes('quota')) {
+        safeMessage?.includes('402') || 
+        safeMessage?.toLowerCase().includes('limit') ||
+        safeMessage?.toLowerCase().includes('quota')) {
       errorMessage = 'Free limit reached';
       statusCode = 402;
-    } else if (error.message?.includes('Invalid scope')) {
+    } else if (safeMessage?.includes('Invalid scope')) {
       errorMessage = 'CloudConvert API key has insufficient permissions. Please regenerate your API key with task.read and task.write scopes.';
-    } else if (error.message?.includes('FORBIDDEN')) {
+    } else if (safeMessage?.includes('FORBIDDEN')) {
       errorMessage = 'CloudConvert API access denied. Please check your API key permissions.';
+    } else {
+      // Generic error message to avoid exposing internal details
+      errorMessage = 'Failed to convert file. Please try again.';
     }
     
     return res.status(statusCode).json({

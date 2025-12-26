@@ -1,4 +1,5 @@
 import CloudConvert from 'cloudconvert';
+import { getSafeErrorMessage } from './error-utils.js';
 
 /**
  * Initialize CloudConvert client
@@ -16,6 +17,29 @@ function getCloudConvertClient() {
 }
 
 /**
+ * Wrap CloudConvert errors to sanitize any sensitive data
+ */
+function sanitizeCloudConvertError(error) {
+  if (!error) {
+    return new Error('CloudConvert operation failed');
+  }
+
+  // Create a new error with sanitized message
+  const sanitized = new Error(getSafeErrorMessage(error));
+  sanitized.name = error.name || 'CloudConvertError';
+  
+  // Preserve status codes if they exist (safe to include)
+  if (typeof error.status === 'number') {
+    sanitized.status = error.status;
+  }
+  if (typeof error.statusCode === 'number') {
+    sanitized.statusCode = error.statusCode;
+  }
+
+  return sanitized;
+}
+
+/**
  * Convert a file using CloudConvert with direct file upload
  * @param {Buffer} fileBuffer - The file content as buffer
  * @param {string} filename - Original filename
@@ -24,53 +48,58 @@ function getCloudConvertClient() {
  * @returns {Promise<{downloadUrl: string}>}
  */
 export async function convertFileBuffer(fileBuffer, filename, inputFormat, outputFormat) {
-  const cloudConvert = getCloudConvertClient();
+  try {
+    const cloudConvert = getCloudConvertClient();
 
-  // Create job with upload task
-  const job = await cloudConvert.jobs.create({
-    tasks: {
-      'upload-file': {
-        operation: 'import/upload'
-      },
-      'convert-file': {
-        operation: 'convert',
-        input: 'upload-file',
-        input_format: inputFormat,
-        output_format: outputFormat
-      },
-      'export-file': {
-        operation: 'export/url',
-        input: 'convert-file'
+    // Create job with upload task
+    const job = await cloudConvert.jobs.create({
+      tasks: {
+        'upload-file': {
+          operation: 'import/upload'
+        },
+        'convert-file': {
+          operation: 'convert',
+          input: 'upload-file',
+          input_format: inputFormat,
+          output_format: outputFormat
+        },
+        'export-file': {
+          operation: 'export/url',
+          input: 'convert-file'
+        }
       }
+    });
+
+    // Get the upload task
+    const uploadTask = job.tasks.find(t => t.operation === 'import/upload');
+    
+    if (!uploadTask || !uploadTask.result || !uploadTask.result.form) {
+      throw new Error('Failed to get upload URL from CloudConvert');
     }
-  });
 
-  // Get the upload task
-  const uploadTask = job.tasks.find(t => t.operation === 'import/upload');
-  
-  if (!uploadTask || !uploadTask.result || !uploadTask.result.form) {
-    throw new Error('Failed to get upload URL from CloudConvert');
+    // Upload the file
+    await cloudConvert.tasks.upload(uploadTask, fileBuffer, filename);
+
+    // Wait for job to complete
+    const finishedJob = await cloudConvert.jobs.wait(job.id);
+
+    // Find the export task with download URL
+    const exportTask = finishedJob.tasks.find(t => 
+      t.operation === 'export/url' && t.status === 'finished'
+    );
+
+    if (!exportTask || !exportTask.result || !exportTask.result.files) {
+      throw new Error('Conversion failed - no output file');
+    }
+
+    return {
+      downloadUrl: exportTask.result.files[0].url,
+      filename: exportTask.result.files[0].filename
+    };
+  } catch (error) {
+    // Sanitize any errors from CloudConvert SDK
+    throw sanitizeCloudConvertError(error);
   }
-
-  // Upload the file
-  await cloudConvert.tasks.upload(uploadTask, fileBuffer, filename);
-
-  // Wait for job to complete
-  const finishedJob = await cloudConvert.jobs.wait(job.id);
-
-  // Find the export task with download URL
-  const exportTask = finishedJob.tasks.find(t => 
-    t.operation === 'export/url' && t.status === 'finished'
-  );
-
-  if (!exportTask || !exportTask.result || !exportTask.result.files) {
-    throw new Error('Conversion failed - no output file');
-  }
-
-  return {
-    downloadUrl: exportTask.result.files[0].url,
-    filename: exportTask.result.files[0].filename
-  };
 }
 
 /**
@@ -114,38 +143,44 @@ export async function createConversionJob(inputUrl, inputFormat, outputFormat) {
  * @returns {Promise<{status: string, progress: number, downloadUrl?: string, error?: string}>}
  */
 export async function getJobStatus(jobId) {
-  const cloudConvert = getCloudConvertClient();
+  try {
+    const cloudConvert = getCloudConvertClient();
 
-  const job = await cloudConvert.jobs.get(jobId);
+    const job = await cloudConvert.jobs.get(jobId);
 
-  const result = {
-    status: job.status,
-    progress: 0
-  };
+    const result = {
+      status: job.status,
+      progress: 0
+    };
 
-  // Calculate progress based on task statuses
-  const tasks = job.tasks || [];
-  const completedTasks = tasks.filter(t => t.status === 'finished').length;
-  result.progress = Math.round((completedTasks / Math.max(tasks.length, 1)) * 100);
+    // Calculate progress based on task statuses
+    const tasks = job.tasks || [];
+    const completedTasks = tasks.filter(t => t.status === 'finished').length;
+    result.progress = Math.round((completedTasks / Math.max(tasks.length, 1)) * 100);
 
-  if (job.status === 'finished') {
-    // Find the export task with the download URL
-    const exportTask = tasks.find(t => 
-      t.operation === 'export/url' && t.status === 'finished'
-    );
+    if (job.status === 'finished') {
+      // Find the export task with the download URL
+      const exportTask = tasks.find(t => 
+        t.operation === 'export/url' && t.status === 'finished'
+      );
 
-    if (exportTask && exportTask.result && exportTask.result.files) {
-      result.downloadUrl = exportTask.result.files[0]?.url;
+      if (exportTask && exportTask.result && exportTask.result.files) {
+        result.downloadUrl = exportTask.result.files[0]?.url;
+      }
+      result.progress = 100;
     }
-    result.progress = 100;
-  }
 
-  if (job.status === 'error') {
-    const errorTask = tasks.find(t => t.status === 'error');
-    result.error = errorTask?.message || 'Conversion failed';
-  }
+    if (job.status === 'error') {
+      const errorTask = tasks.find(t => t.status === 'error');
+      // Sanitize error message
+      result.error = getSafeErrorMessage(errorTask?.message || 'Conversion failed');
+    }
 
-  return result;
+    return result;
+  } catch (error) {
+    // Sanitize any errors from CloudConvert SDK
+    throw sanitizeCloudConvertError(error);
+  }
 }
 
 /**
